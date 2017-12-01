@@ -1,0 +1,5 @@
+- name : install logstash
+  yum:
+     name: "{{ rpm_repo }}{{ logstash_package }}"
+     state: present
+

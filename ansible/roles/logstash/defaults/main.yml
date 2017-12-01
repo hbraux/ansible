@@ -1,0 +1,4 @@
+logstash:
+    version: 5.6.4
+
+logstash_package: "logstash-{{ logstash.version }}.rpm"

@@ -1,5 +1,13 @@
-[elk]
+[elasticsearch]
 elk1.hostonly.com
+elk2.hostonly.com
+
+[logstash]
+elk1.hostonly.com
+
+[kibana]
+elk2.hostonly.com
+
 
 [kafka]
 kafka1.hostonly.com

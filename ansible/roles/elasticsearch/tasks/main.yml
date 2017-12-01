@@ -1,6 +1,6 @@
 - name : install Elasticsearch
   yum:
-     name: "{{ rpm_repo }}/elasticsearch-{{ elasticsearch.version }}.rpm"
+     name: "{{ rpm_repo }}{{ elasticsearch_package }}"
      state: present
 
 - name: configure Cluster Name

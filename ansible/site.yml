@@ -1,10 +1,26 @@
-- hosts: elk
+- hosts: elasticsearch
   roles:
     - common
     - jdk
     - elasticsearch
   become: true
   
+- hosts: kibana
+  roles:
+    - common
+    - jdk
+    - kibana
+  become: true
+  
+
+- hosts: logstash
+  roles:
+    - common
+    - jdk
+    - logstash
+  become: true
+  
+
 - hosts: kafka
   roles:
     - common

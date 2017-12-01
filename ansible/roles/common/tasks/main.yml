@@ -10,9 +10,10 @@
     path: /etc/sysconfig/network-scripts/ifcfg-eth0
     regexp: '^ONBOOT='
     line: 'ONBOOT="no"'
-
+  register: eth0
+  
 - name: restart network
   systemd:
     name: network
     state: restarted
-    
+  when: eth0.changed

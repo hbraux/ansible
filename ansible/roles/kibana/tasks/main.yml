@@ -1,0 +1,9 @@
+- name : install Kibana
+  yum:
+     name: "{{ rpm_repo }}{{ kibana_package }}"
+     state: present
+
+- name: start kibana
+  systemd:
+    state: started
+    name: kibana
