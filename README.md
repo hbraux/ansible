@@ -1,2 +1,2 @@
-Misc. deployment scripts
+Misc. deployment scripts for Sandbox VM
 
