@@ -1,1 +1,1 @@
-Scripts to deploy VitualNox vms 
+Misc. deployment scripts
