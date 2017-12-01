@@ -1,0 +1,15 @@
+jdk:
+  version: 1.8.0
+  build: 1.8.0.151-1.b12.el7_4.x86_64
+  deps:
+    - copy-jdk-configs-2.2-3.el7.noarch
+    - tzdata-java-2017c-1.el7.noarch
+    - libxslt-1.1.28-5.el7.x86_64
+    - python-lxml-3.2.1-4.el7.x86_64
+    - python-javapackages-3.4.1-11.el7.noarch
+    - javapackages-tools-3.4.1-11.el7.noarch
+    - libjpeg-turbo-1.2.90-5.el7.x86_64
+    - lksctp-tools-1.0.17-2.el7.x86_64
+    
+    
+jdk_package: "java-{{ jdk.version }}-openjdk-headless-{{ jdk.build }}"

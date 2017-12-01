@@ -1,0 +1,2 @@
+rpm_repo: "{{ lookup('env','RPM_REPO') }}"
+

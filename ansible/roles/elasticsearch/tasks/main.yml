@@ -1,0 +1,27 @@
+- name : install Elasticsearch
+  yum:
+     name: "{{ rpm_repo }}/elasticsearch-{{ elasticsearch.version }}.rpm"
+     state: present
+
+- name: configure Cluster Name
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'cluster.name:'
+    line: 'cluster.name: {{ elasticsearch.clustername }}'
+  
+- name: configure Cluster networking
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'network.host:'
+    line: 'network.host: _site_'
+    
+- name: configure other nodes
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'discovery.zen.ping.unicast.hosts:'
+    line: 'discovery.zen.ping.unicast.hosts: ["elk1.hostonly.com","elk2.hostonly.com"]'
+
+- name: start elasticsearch
+  systemd:
+    state: started
+    name: elasticsearch

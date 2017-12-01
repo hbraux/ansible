@@ -1,0 +1,14 @@
+- hosts: elk
+  roles:
+    - common
+    - jdk
+    - elasticsearch
+  become: true
+  
+- hosts: kafka
+  roles:
+    - common
+    - jdk
+    - zookeeper
+    - kafka
+

@@ -1,0 +1,10 @@
+[elk]
+elk1.hostonly.com
+
+[kafka]
+kafka1.hostonly.com
+
+[nifi]
+nifi1.hostonly.com
+
+
