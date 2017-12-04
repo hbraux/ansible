@@ -1,3 +1,10 @@
+- name: add Elastic repo
+  template:
+    src: elastic.j2
+    dest: /etc/yum.repos.d/elastic.repo
+    owner: root
+    group: root
+
 - name : install Elasticsearch
   yum:
      name: "{{ rpm_repo }}{{ elasticsearch_package }}"
@@ -8,19 +15,22 @@
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'cluster.name:'
     line: 'cluster.name: {{ elasticsearch.clustername }}'
+  notify: restart elasticsearch
   
 - name: configure Cluster networking
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'network.host:'
     line: 'network.host: _site_'
-    
+  notify: restart elasticsearch
+  
 - name: configure other nodes
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'discovery.zen.ping.unicast.hosts:'
-    line: 'discovery.zen.ping.unicast.hosts: ["elk1.hostonly.com","elk2.hostonly.com"]'
-
+    line: 'discovery.zen.ping.unicast.hosts: [ {{ groups["elasticsearch"] }} | join(",") ]'
+  notify: restart elasticsearch
+  
 - name: start elasticsearch
   systemd:
     state: started

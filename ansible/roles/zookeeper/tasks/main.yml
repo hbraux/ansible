@@ -1,0 +1,29 @@
+- name: create zookeeper directory
+  file:
+    path: /opt/zookeeper
+    state: directory
+    mode: 755
+
+- name: install zookeeper
+  yum:
+    name: "{{ rpm_repo }}{{ zookeeper_package }}"
+    state: present
+
+- name: configure zookeeper
+  template:
+    src: zoo.j2
+    dest: /etc/zookeeper/zoo.cfg
+  notify: restart zookeeper
+
+- name: create myid file
+  copy:
+    content: |
+      {{ hostvars[inventory_hostname].zk_id }}
+    dest: "{{ zookeeper.datadir }}/myid"
+  notify: restart zookeeper
+
+- name: start zookeeper
+  systemd:
+    state: started
+    name: zookeeper
+                              

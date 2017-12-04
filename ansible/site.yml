@@ -1,3 +1,17 @@
+- hosts: zookeeper
+  roles:
+    - common
+    - jdk
+    - zookeeper
+  become: true
+  
+- hosts: kafka
+  roles:
+    - common
+    - jdk
+    - kafka
+  become: true
+  
 - hosts: elasticsearch
   roles:
     - common
@@ -11,7 +25,6 @@
     - jdk
     - kibana
   become: true
-  
 
 - hosts: logstash
   roles:
@@ -20,11 +33,3 @@
     - logstash
   become: true
   
-
-- hosts: kafka
-  roles:
-    - common
-    - jdk
-    - zookeeper
-    - kafka
-

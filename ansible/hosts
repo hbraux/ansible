@@ -1,3 +1,10 @@
+[zookeeper]
+kafka1.hostonly.com zk_id=1
+
+[kafka]
+kafka1.hostonly.com broker_id=1
+kafka2.hostonly.com broker_id=2
+
 [elasticsearch]
 elk1.hostonly.com
 elk2.hostonly.com
@@ -8,9 +15,6 @@ elk1.hostonly.com
 [kibana]
 elk2.hostonly.com
 
-
-[kafka]
-kafka1.hostonly.com
 
 [nifi]
 nifi1.hostonly.com
