@@ -1,0 +1,8 @@
+- name: reload systemctl
+  command: systemctl daemon-reload
+
+- name: start nifi
+  service: name=nifi state=started enabled=yes
+
+- name: restart nifi
+  service: name=nifi state=restarted enabled=yes

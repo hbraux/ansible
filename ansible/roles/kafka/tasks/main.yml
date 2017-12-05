@@ -8,14 +8,12 @@
     path: /etc/kafka/server.properties
     regexp: 'zookeeper.connect='
     line: 'zookeeper.connect={{ groups["zookeeper"] | join(":{0},".format(2181)) }}:2181'
-  notify: restart kafka
 
 - name: configure Broker Id
   lineinfile:
     path: /etc/kafka/server.properties
     regexp: 'broker.id='
     line: 'broker.id={{ hostvars[inventory_hostname].broker_id }}'
-  notify: restart kafka
  
 - name: start kafka
   systemd:

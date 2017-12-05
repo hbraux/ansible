@@ -1,3 +1,6 @@
+[nifi]
+nifi1.hostonly.com
+
 [zookeeper]
 kafka1.hostonly.com zk_id=1
 
@@ -14,9 +17,5 @@ elk1.hostonly.com
 
 [kibana]
 elk2.hostonly.com
-
-
-[nifi]
-nifi1.hostonly.com
 
 

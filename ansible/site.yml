@@ -1,3 +1,10 @@
+- hosts: nifi
+  roles:
+    - common
+    - jdk
+    - nifi
+  become: true
+
 - hosts: zookeeper
   roles:
     - common

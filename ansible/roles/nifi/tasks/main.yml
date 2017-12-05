@@ -1,0 +1,35 @@
+- name : install Nifi dependencies
+  yum:
+    name: "{{ rpm_repo }}{{ item }}"
+    state: present
+  with_items: "{{ nifi.deps }}"
+
+- name : install Nifi
+  yum:
+    name: "{{ rpm_repo }}{{ nifi_package }}"
+    state: present
+
+- name: configure nifi
+  lineinfile: 
+    path: "/usr/hdf/current/nifi/conf/bootstrap.conf"
+    regexp: 'run.as='
+    line: 'run.as=nifi'
+
+- name: fix ownership
+  file:
+    path: "{{ nifi.dir }}"
+    owner: nifi
+    group: nifi
+    recurse: true
+    
+- name: install service
+  template:
+    src : nifi.service.j2
+    dest: /lib/systemd/system/nifi.service 
+  notify:
+    - reload systemctl
+    
+- name: start nifi
+  systemd:
+    state: started
+    name: nifi

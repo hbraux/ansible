@@ -15,21 +15,18 @@
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'cluster.name:'
     line: 'cluster.name: {{ elasticsearch.clustername }}'
-  notify: restart elasticsearch
   
 - name: configure Cluster networking
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'network.host:'
     line: 'network.host: _site_'
-  notify: restart elasticsearch
   
 - name: configure other nodes
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'discovery.zen.ping.unicast.hosts:'
     line: 'discovery.zen.ping.unicast.hosts: [ {{ groups["elasticsearch"] }} | join(",") ]'
-  notify: restart elasticsearch
   
 - name: start elasticsearch
   systemd:
