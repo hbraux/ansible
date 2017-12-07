@@ -1,93 +1,74 @@
 #!/bin/bash
 
-DEPLOY_TYPE=$HOME/.deploy.type
+# Constants
+DEPLOY_DIR=$HOME/.deploy.d
+DEPLOY_CACHE=$DEPLOY_DIR/cache
+DEPLOY_ANSIBLE=$HOME/ansible
 
-f
+# variables
+declare VagrantId
+
 function die {
-    echo "ERROR: $1"
+    echo "DEPLOY: ERROR: $1"
     exit 1
+}
+function info {
+    echo "DEPLOY: $1"
 }
 
 function usage {
-    echo "$0 <server type>"; exit
+    echo "$0 [-s] <server type>"; exit
 }
 
-function vagrantup {
-  serv=${1%%.*}
-  cache=$HOME/.vagrant.cache
-  if [ ! -f $cache ]
-  then echo "Collecting Vagrant global status from host $VM_HOST"
-       ssh $VM_HOST "vagrant global-status">>$cache
+function get_vagrantId {
+  if [ ! -f $DEPLOY_CACHE ]
+  then info "Collecting Vagrant global status from host $VM_HOST"
+       ssh $VM_HOST "vagrant global-status" >>$DEPLOY_CACHE
   fi
-  id=$(grep " $serv" $cache |cut -d\  -f1)
-  [[ -n $id ]] ||die "Cannot find $serv in $cache"
-  echo "Starting up the VM $id:$serv with vagrant"
-  ssh $VM_HOST "vagrant up $id"
-  wait 2
+  VagrantId=$(grep " $1 " $DEPLOY_CACHE |cut -d\  -f1)
+  [[ -n $VagrantId ]] ||die "Cannot find $1 in cache"
 }
 
-
-function deploy {
-    # check if servers are up
-    echo "Deploying $servers"
-    for server in $servers
-    do nc -z  $server 22 >/dev/null
-       if [ $? -eq 0 ]
-       then echo "VM $server is already running"
-       else vagrantup $server
-       fi
-    done
-    echo "Invoking ansible playbook site.yml"
-    echo $type > $DEPLOY_TYPE
-    ansible-playbook ansible/site.yml -l "$type*"
+function up {
+  serv=${1%%.*}
+  get_vagrantId $serv
+  info "Starting up the VM $VagrantId:$serv with vagrant"
+  ssh $VM_HOST "vagrant up $VagrantId"
 }
 
 function destroy {
-    echo "Undeploying $servers"
-    for server in $servers
-    do nc -z  $server 22 >/dev/null
-       [ $? -eq 0 ] && vagrantdestroy $server
-    done
-    rm -f $DEPLOY_TYPE
+  serv=${1%%.*}
+  get_vagrantId $serv
+  info "Destroying the VM $VagrantId:$serv with vagrant"
+  ssh $VM_HOST "vagrant destroy -f $VagrantId" 
 }
-
-function off {
-    echo "Stopping $servers"
-    for server in $servers
-    do nc -z  $server 22 >/dev/null
-       [ $? -eq 0 ] && ssh vagrant@$server '/sbin/shutdown -h now'
-    done
-    rm -f $DEPLOY_TYPE
-}
-
 
 [ $# -ne 0 ] || usage
 [[ -n $VM_HOST ]] || die "\$VM_HOST undefined"
 nc -z  $VM_HOST 22 >/dev/null|| die "Port 22 not opened on $VM_HOST"
 
-type=$1
+mkdir -p $DEPLOY_DIR
+
 mode=deploy
-if [ $type == off -o  $type == destroy ]
-then [[ -f $DEPLOY_TYPE ]] || die "Nothing to stop"
-     mode=$type
-     type=$(cat $DEPLOY_TYPE)
-else
-    if [ -f $DEPLOY_TYPE ]
-    then curr=$(cat $DEPLOY_TYPE)
-	 [ $curr == $type ] || die "Deployment $curr is already active"
-    fi
+if [[ $1 == -s ]]
+then mode=shutdown; shift
+else if [[ $1 == -D ]]
+     then mode=destroy; shift
+     fi
 fi
- 
+type=$1
 [ $(egrep -c " $type[1-9][.]" /etc/hosts) -ne 0 ] \
     || die "Cannot find any server of type $type in /etc/hosts"
-servers=$(grep " $type" /etc/hosts |awk '{ print $2}')
 
-
-case $mode in
-    deploy)   deploy;;
-    off)      off;;
-    destroy)  destroy;;
-esac
-
+for server in $(grep " $type" /etc/hosts |awk '{ print $2}')
+do ping -c 1 $server >/dev/null
+   alive=$?
+   case $mode in
+       deploy)    up $server;;
+       destroy)   [ $alive -eq 0 ] && destroy $server;;
+   esac
+done
+playbook=$DEPLOY_ANSIBLE/$mode.yml
+[ -f $playbook ] && ansible-playbook $playbook -l "$type*"
 
 
