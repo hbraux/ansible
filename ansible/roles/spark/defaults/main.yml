@@ -1,0 +1,13 @@
+spark:
+  temp_dir: "{{ tar_repo }}"
+  version: "1.6.3"
+  hadoop_version: "2.6"
+  working_dir: /var/lib/spark
+  install_dir: /opt/spark
+  master_work_port: 7077 
+  worker_work_port: 7078
+  master_ui_port: 8080
+  worker_ui_port: 8081
+  mirror: http://d3kbcqa49mib13.cloudfront.net
+
+

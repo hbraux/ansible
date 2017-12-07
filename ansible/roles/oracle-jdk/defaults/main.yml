@@ -1,0 +1,4 @@
+jdk:
+  version: 8u152
+  
+package: "jdk-{{ jdk.version }}-linux-x64.rpm"

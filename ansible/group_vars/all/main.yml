@@ -1,2 +1,5 @@
+local_cache:  "{{ lookup('env','DOWNLOAD_CACHE') }}"
 rpm_repo: "{{ lookup('env','RPM_REPO') }}"
+tar_repo: "{{ lookup('env','TAR_REPO') }}"
 
+dest_cache: /tmp

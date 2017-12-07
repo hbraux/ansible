@@ -1,0 +1,14 @@
+---
+
+- name: install JDK8 dependencies
+  yum:
+    name: "{{ rpm_repo }}{{ item }}"
+    state: present
+  with_items: "{{ jdk.deps }}"
+
+- name: install JDK8 
+  yum:
+    name: "{{ rpm_repo }}{{ jdk_package }}"
+    state: present
+
+

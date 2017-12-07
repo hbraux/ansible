@@ -1,3 +1,13 @@
+[sandbox]
+sandbox1.hostonly.com
+
+[spark-master]
+spark1.hostonly.com
+
+[spark-worker]
+spark1.hostonly.com
+spark2.hostonly.com
+
 [nifi]
 nifi1.hostonly.com
 

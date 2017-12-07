@@ -1,0 +1,12 @@
+- name: "upload {{ package }}"
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
+  
+- name: "install {{ package }}"
+  yum:
+    name: "{{ dest_cache }}/{{ package }}"
+    state: present
+
+
+
