@@ -1,5 +1,13 @@
-local_cache:  "{{ lookup('env','DOWNLOAD_CACHE') }}"
-rpm_repo: "{{ lookup('env','RPM_REPO') }}"
-tar_repo: "{{ lookup('env','TAR_REPO') }}"
+cache:
+  local: "{{ lookup('env','DOWNLOAD_CACHE') }}"
+  dest: /tmp
 
-dest_cache: /tmp
+port:
+  elasticsearch: 9200
+  nifi: 8080
+  zookeeper: 2181
+  kafka: 9096
+  spark_master: 7077
+  spark_worker: 7078
+  spark_master_ui: 8077
+  spark_worker_ui: 8078

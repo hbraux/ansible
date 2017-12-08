@@ -4,11 +4,11 @@ Wants=network.target network-online.target
 After=network.target network-online.target
 
 [Service]
+Type=forking
 User=spark
-WorkingDirectory={{ spark.working_dir }}
-#ExecStart={{ spark.install_dir }}/spark-{{ spark.version }}-bin-hadoop{{ spark.hadoop_version }}/bin/spark-class org.apache.spark.deploy.worker.Worker spark://{{ groups["spark-master"] | join(":{0},".format(spark.master_work_port)) }}:{{ spark.master_work_port }} --webui-port {{ spark.worker_ui_port }} --work-dir {{ spark.working_dir }}
-ExecStart={{ spark.install_dir }}/spark-{{ spark.version }}-bin-hadoop{{ spark.hadoop_version }}/sbin/start-slave.sh spark://{{ groups["spark-master"] | join(":{0},".format(spark.master_work_port)) }}:{{ spark.master_work_port }}
-ExecStop={{ spark.install_dir }}/spark-{{ spark.version }}-bin-hadoop{{ spark.hadoop_version }}/sbin/stop-slave.sh
+WorkingDirectory={{ spark.datadir }}
+ExecStart={{ spark_path }}/sbin/start-slave.sh spark://{{ hostvars[inventory_hostname].master }}:{{ port.spark_master }} --webui-port {{ port.spark_worker_ui }} 
+ExecStop={{ spark_path }}/sbin/stop-slave.sh
 Restart=on-abort
 
 [Install]

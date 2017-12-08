@@ -1,10 +1,22 @@
-- name: create user
+- name: "create user {{ username }}"
   user:
-    name: client
+    name: "{{ username }}"
     # python -c 'import crypt; print crypt.crypt("my Password", "$1$SomeSalt$")'
     password: $1$SomeSalt$cFiNA3xJV0j/CUE92WjPL0
-    group: spark
+    groups: users,spark
+
+- name: add local public key
+  authorized_key:
+    user: "{{ username }}"
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
     
+- name: update bashrc
+  template:
+    src: bashrc.j2
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
+
 - name: allow PasswordAuthentication
   lineinfile:
     path: /etc/ssh/sshd_config

@@ -23,13 +23,13 @@ elk1.hostonly.com
 elk2.hostonly.com
 
 [spark-master]
-sandbox1.hostonly.com
-spark1.hostonly.com
+sandbox1.hostonly.com master=sandbox1.hostonly.com
+spark1.hostonly.com master=spark1.hostonly.com
 
 [spark-worker]
-sandbox1.hostonly.com
-spark1.hostonly.com
-spark2.hostonly.com
+sandbox1.hostonly.com master=sandbox1.hostonly.com
+spark2.hostonly.com master=spark1.hostonly.com
+spark3.hostonly.com master=spark1.hostonly.com
 
 [nifi]
 nifi1.hostonly.com

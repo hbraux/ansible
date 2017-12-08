@@ -1,11 +1,11 @@
 - name: "upload {{ package }}"
   copy:
-    src: "{{ local_cache }}/{{ package }}"
-    dest: "{{ dest_cache }}/{{ package }}"
+    src: "{{ cache.local }}/{{ package }}"
+    dest: "{{ cache.dest }}/{{ package }}"
 
 - name: "install {{ package }}"
   yum:
-    name: "{{ dest_cache }}/{{ package }}"
+    name: "{{ cache.dest }}/{{ package }}"
     state: present
     
 - name: configure Cluster Name
