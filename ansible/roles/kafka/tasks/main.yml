@@ -1,8 +1,13 @@
-- name : install Kafka
-  yum:
-     name: "{{ rpm_repo }}{{ kafka_package }}"
-     state: present
+- name: "upload {{ package }}"
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
 
+- name: "install {{ package }}"
+  yum:
+    name: "{{ dest_cache }}/{{ package }}"
+    state: present
+    
 - name: configure Zookeeper connection
   lineinfile:
     path: /etc/kafka/server.properties

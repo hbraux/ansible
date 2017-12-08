@@ -1,15 +1,13 @@
-- name: add Elastic repo
-  template:
-    src: elastic.j2
-    dest: /etc/yum.repos.d/elastic.repo
-    owner: root
-    group: root
+- name: "upload {{ package }}"
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
 
-- name : install Elasticsearch
+- name: "install {{ package }}"
   yum:
-     name: "{{ rpm_repo }}{{ elasticsearch_package }}"
-     state: present
-
+    name: "{{ dest_cache }}/{{ package }}"
+    state: present
+    
 - name: configure Cluster Name
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml

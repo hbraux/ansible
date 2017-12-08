@@ -16,7 +16,7 @@
     regexp: '^ONBOOT='
     line: 'ONBOOT="no"'
   register: eth0
-  
+
 - name: restart network
   systemd:
     name: network

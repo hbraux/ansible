@@ -1,0 +1,15 @@
+- name: create user
+  user:
+    name: client
+    # python -c 'import crypt; print crypt.crypt("my Password", "$1$SomeSalt$")'
+    password: $1$SomeSalt$cFiNA3xJV0j/CUE92WjPL0
+    group: spark
+    
+- name: allow PasswordAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication '
+    line: 'PasswordAuthentication yes'
+  notify:
+    - restart sshd
+

@@ -4,11 +4,16 @@
     state: directory
     mode: 755
 
-- name: install zookeeper
+- name: "upload {{ package }}"
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
+  
+- name: "install {{ package }}"
   yum:
-    name: "{{ rpm_repo }}{{ zookeeper_package }}"
+    name: "{{ dest_cache }}/{{ package }}"
     state: present
-
+    
 - name: configure zookeeper
   template:
     src: zoo.j2

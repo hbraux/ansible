@@ -4,4 +4,4 @@ nifi:
   deps:
     - hdf-select-2.1.2.0-10.el6.noarch.rpm
   
-nifi_package: "nifi_2_1_2_0_10-1.1.0.2.1.2.0-10.el6.x86_64.rpm"
+package: "nifi_2_1_2_0_10-1.1.0.2.1.2.0-10.el6.x86_64.rpm"

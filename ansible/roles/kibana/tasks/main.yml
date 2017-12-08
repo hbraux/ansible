@@ -1,7 +1,12 @@
-- name : install Kibana
+- name: "upload {{ package }}"
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
+
+- name: "install {{ package }}"
   yum:
-     name: "{{ rpm_repo }}{{ kibana_package }}"
-     state: present
+    name: "{{ dest_cache }}/{{ package }}"
+    state: present
 
 - name: start kibana
   systemd:

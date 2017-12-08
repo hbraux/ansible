@@ -2,4 +2,4 @@ zookeeper:
   version: 3.4.10-1
   datadir: /var/lib/zookeeper
   
-zookeeper_package: "zookeeper-{{ zookeeper.version }}.x86_64.rpm"
+package: "zookeeper-{{ zookeeper.version }}.x86_64.rpm"

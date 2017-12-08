@@ -1,5 +1,5 @@
 elasticsearch:
-    version: 5.6.4
-    clustername: es
+  version: 5.6.4
+  clustername: es
 
-elasticsearch_package: "elasticsearch-{{ elasticsearch.version }}.rpm"
+package: "elasticsearch-{{ elasticsearch.version }}.rpm"

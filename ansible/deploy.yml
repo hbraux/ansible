@@ -3,22 +3,12 @@
     - common
     - oracle-jdk
   become: true
-  
-- hosts: spark-master
-  roles:
-    - spark
-  become: true
 
-- hosts: spark-worker
+- hosts: client
   roles:
-    - spark
+    - client
   become: true
-
-- hosts: nifi
-  roles:
-    - nifi
-  become: true
-
+            
 - hosts: zookeeper
   roles:
     - zookeeper
@@ -44,8 +34,18 @@
     - logstash
   become: true
   
-- hosts: sandbox
+- hosts: spark-master
   roles:
     - spark
   become: true
-    
+
+- hosts: spark-worker
+  roles:
+    - spark
+  become: true
+
+- hosts: nifi
+  roles:
+    - nifi
+  become: true
+

@@ -1,13 +1,25 @@
+- name: upload Nifi dependencies
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
+  with_items: "{{ nifi.deps }}"
+  
+              
 - name : install Nifi dependencies
   yum:
-    name: "{{ rpm_repo }}{{ item }}"
+    name: "{{ dest_cache }}/{{ item }}"
     state: present
   with_items: "{{ nifi.deps }}"
 
-- name : install Nifi
+- name: "upload {{ package }}"
+  copy:
+    src: "{{ local_cache }}/{{ package }}"
+    dest: "{{ dest_cache }}/{{ package }}"
+
+- name: "install {{ package }}"
   yum:
-    name: "{{ rpm_repo }}{{ nifi_package }}"
-    state: present
+    name: "{{ dest_cache }}/{{ package }}"
+    state: present    
 
 - name: configure nifi
   lineinfile: 
