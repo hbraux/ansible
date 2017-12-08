@@ -7,9 +7,10 @@ DEPLOY_ANSIBLE=$HOME/ansible
 
 # variables
 declare VagrantId
+declare HostIp
 
 function die {
-    echo "DEPLOY: ERROR: $1"
+    echo "DEPLOY: *** ERROR *** $1"
     exit 1
 }
 function info {
@@ -20,32 +21,52 @@ function usage {
     echo "$0 [-s] <server type>"; exit
 }
 
-function get_vagrantId {
+function checkSshConf {
+    domain=$(uname -n)
+    domain=${domain#*.}
+    [ -f $HOME/.ssh/config ] || touch $HOME/.ssh/config
+    if [ $(grep -c "\*\.$domain" $HOME/.ssh/config) -eq 0 ]
+    then info "Updating $HOME/.ssh/config"
+	 echo "
+Host *.$domain
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+" >>$HOME/.ssh/config
+    fi
+} 
+
+function getVagrantId {
   if [ ! -f $DEPLOY_CACHE ]
-  then info "Collecting Vagrant global status from host $VM_HOST"
-       ssh $VM_HOST "vagrant global-status" >>$DEPLOY_CACHE
+  then info "Collecting Vagrant global status from host $HostIp"
+       ssh $HostIp "vagrant global-status" >>$DEPLOY_CACHE
   fi
   VagrantId=$(grep " $1 " $DEPLOY_CACHE |cut -d\  -f1)
   [[ -n $VagrantId ]] ||die "Cannot find $1 in cache"
 }
 
+function getHostIp {
+    HostIp=$(netstat -rn  | grep eth0 | grep '255.255.255' | cut -d\  -f1 | sed 's/.0$/.1/')
+    
+}
 function up {
   serv=${1%%.*}
-  get_vagrantId $serv
-  info "Starting up the VM $VagrantId:$serv with vagrant"
-  ssh $VM_HOST "vagrant up $VagrantId"
+  getVagrantId $serv
+  info "Starting up the VM $VagrantId:$serv"
+  ssh $HostIp "vagrant up $VagrantId"
 }
 
 function destroy {
   serv=${1%%.*}
-  get_vagrantId $serv
+  getVagrantId $serv
   info "Destroying the VM $VagrantId:$serv with vagrant"
-  ssh $VM_HOST "vagrant destroy -f $VagrantId" 
+  ssh $HostIp "vagrant destroy -f $VagrantId" 
 }
 
 [ $# -ne 0 ] || usage
-[[ -n $VM_HOST ]] || die "\$VM_HOST undefined"
-nc -z  $VM_HOST 22 >/dev/null|| die "Port 22 not opened on $VM_HOST"
+
+checkSshConf
+getHostIp
+nc -w 1 $HostIp 22 </dev/null >/dev/null || die "port 22 not opened on $HostIp"
 
 mkdir -p $DEPLOY_DIR
 
@@ -64,7 +85,7 @@ for server in $(grep " $type" /etc/hosts |awk '{ print $2}')
 do ping -c 1 $server >/dev/null
    alive=$?
    case $mode in
-       deploy)    up $server;;
+       deploy)    [ $alive -ne 0 ] && up $server;;
        destroy)   [ $alive -eq 0 ] && destroy $server;;
    esac
 done
