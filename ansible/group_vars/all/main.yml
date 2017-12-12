@@ -2,6 +2,7 @@ cache:
   local: "{{ lookup('env','DOWNLOAD_CACHE') }}"
   dest: /tmp
 
+# not all variables are handled yet in scripts (TODO)
 port:
   elasticsearch: 9200
   nifi: 8080
@@ -11,3 +12,10 @@ port:
   spark_worker: 7078
   spark_master_ui: 8077
   spark_worker_ui: 8078
+
+# list of servers
+servers:
+  zookeeper: "{{ groups['zookeeper'] | intersect(play_hosts) }}"
+  elasticsearch: "{{ groups['elasticsearch'] | intersect(play_hosts) }}"
+  kafka: "{{ groups['kafka'] | intersect(play_hosts) }}"
+

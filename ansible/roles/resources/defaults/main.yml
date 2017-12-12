@@ -1,0 +1,14 @@
+resources:
+  kafka:
+    partitions: 2
+    replication: "{{ servers.kafka | length }}"
+    topics:
+      - topic1
+  elasticsearch:
+    shards: 1
+    replicas: "{{ servers.elasticsearch | length -1 }}"
+    indexes:
+      - index2
+
+
+

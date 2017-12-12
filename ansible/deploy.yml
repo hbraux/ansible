@@ -1,14 +1,15 @@
+- hosts: resources
+  roles:
+    - resources
+  become: true
+  run_once: true
+
 - hosts: all
   roles:
     - common
     - oracle-jdk
   become: true
 
-- hosts: client
-  roles:
-    - client
-  become: true
-            
 - hosts: zookeeper
   roles:
     - zookeeper
@@ -49,3 +50,15 @@
     - nifi
   become: true
 
+- hosts: client
+  roles:
+    - client
+  become: true
+
+
+
+
+
+
+
+  

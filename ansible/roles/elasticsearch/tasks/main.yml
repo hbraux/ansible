@@ -1,3 +1,6 @@
+- set_fact:
+    eslist: "{{ servers.elasticsearch | join(',') }}"
+
 - name: "upload {{ package }}"
   copy:
     src: "{{ cache.local }}/{{ package }}"
@@ -24,8 +27,8 @@
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: 'discovery.zen.ping.unicast.hosts:'
-    line: 'discovery.zen.ping.unicast.hosts: [ {{ groups["elasticsearch"] }} | join(",") ]'
-  
+    line: "discovery.zen.ping.unicast.hosts: [ {{ eslist }} ]"
+
 - name: start elasticsearch
   systemd:
     state: started

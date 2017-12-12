@@ -1,0 +1,20 @@
+[zookeeper]
+sandbox1.hostonly.com zk_id=1
+
+[kafka]
+sandbox1.hostonly.com broker_id=1
+
+[elasticsearch]
+sandbox1.hostonly.com
+
+[spark-master]
+sandbox1.hostonly.com master=sandbox1.hostonly.com
+
+[spark-worker]
+sandbox1.hostonly.com master=sandbox1.hostonly.com
+
+[client]
+sandbox1.hostonly.com
+
+[resources]
+sandbox1.hostonly.com

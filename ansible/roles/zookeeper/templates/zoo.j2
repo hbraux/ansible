@@ -3,6 +3,6 @@ dataDir={{ zookeeper.datadir }}
 clientPort=2181
 initLimit=5
 syncLimit=2
-{% for name in groups["zookeeper"] %}
+{% for name in servers.zookeeper %}
 server.{{ loop.index }}={{ name }}:2888:3888
 {% endfor %}

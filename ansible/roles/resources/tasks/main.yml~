@@ -1,0 +1,14 @@
+- name: create Kafka topics
+  shell: "/opt/kafka/bin/kafka-topics.sh --zookeeper {{ groups['zookeeper'] | join(':{0},'.format(2181)) }}:2181 --create --topic {{ item }}  --partitions {{ resources.kafka.partitions }} --replication-factor {{ resources.kafka.replication }} "
+  become: kafka
+  with_items: "{{ resources.kafka.topics }}"
+
+- name: create Elastic indexes
+  uri:
+    url: "http://{{ groups('elasticsearch'][0] }}:{{ port.elasticsearch }}/{{ item }}"
+    method: POST
+    return_content: yes
+    HEADER_Content-Type: "application/json"
+    body: '{"settings" : { "index" : { "number_of_shards" : {{ resources.elasticsearch.shards}} ,  "number_of_replicas" : {{ resources.elasticsearch.replicas }} }}}'
+  with_items: "{{ resources.elasticsearch.indexes }}"
+
