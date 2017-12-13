@@ -38,6 +38,12 @@
     group: spark
     creates: "{{ spark_path }}/RELEASE"
 
+- name: create link
+  file:
+    src: "{{ spark_path }}"
+    dest: /opt/spark
+    state: link
+
 - name: set spark-env.sh
   template:
     src: "spark-env-sh.j2"

@@ -1,5 +1,16 @@
-zookeeper:
-  version: 3.4.10-1
-  datadir: /var/lib/zookeeper
-  
-package: "zookeeper-{{ zookeeper.version }}.x86_64.rpm"
+install:
+  module: zookeeper
+  version: "3.4.10"
+  user: zookeeper
+  group: zookeeper
+  bin: /opt
+  data: /var/lib
+  log: /var/log
+  cfg: /etc
+  configuration:
+    - zoo.cfg
+  datafiles:
+    - myid
+  systemd:
+    - zookeeper
+    

@@ -1,8 +1,17 @@
+# proxy
+proxy_env:
+  http_proxy: "{{ lookup('env','PROXY') }}"
+  
+# download sites
+mirror:
+  apache: http://apache.crihan.fr/dist
+
+# cache for download
 cache:
-  local: "{{ lookup('env','DOWNLOAD_CACHE') }}"
+  local: "{{ lookup('env','DEPLOY_CACHE') }}"
   dest: /tmp
 
-# not all variables are handled yet in scripts (TODO)
+# TODO: check that ports are handled in scripts (zk: ok)
 port:
   elasticsearch: 9200
   nifi: 8080
@@ -18,4 +27,11 @@ servers:
   zookeeper: "{{ groups['zookeeper'] | intersect(play_hosts) }}"
   elasticsearch: "{{ groups['elasticsearch'] | intersect(play_hosts) }}"
   kafka: "{{ groups['kafka'] | intersect(play_hosts) }}"
-
+  spark_workers: "{{ groups['spark-worker'] | intersect(play_hosts) }}"
+  
+# site variables
+site:
+  zookeeper: "{{ servers.zookeeper | join(':{0},'.format( port.zookeeper )) }}:{{ port.zookeeper }}"
+  elasticsearch: "http://{{ servers.elasticsearch[0] }}:{{ port.elasticsearch }}"
+  kafka: "{{ servers.kafka | join(':{0},'.format( port.kafka )) }}:{{ port.kafka }}"
+    

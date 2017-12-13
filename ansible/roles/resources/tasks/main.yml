@@ -3,7 +3,7 @@
 
 - name: create Elastic indexes
   uri:
-    url: "http://{{ servers.elasticsearch[0] }}:{{ port.elasticsearch }}/{{ item }}"
+    url: "{{ site.elasticsearch }}/{{ item }}"
     method: PUT
     bofy_format: json
     body: "{{ body | to_json }}"
@@ -11,7 +11,7 @@
   run_once: true
 
 - name: create Kafka topics
-  shell: "/opt/kafka/bin/kafka-topics.sh --zookeeper {{ servers.zookeeper | join(':{0},'.format(2181)) }}:2181 --create --topic {{ item }}  --partitions {{ resources.kafka.partitions }} --replication-factor {{ resources.kafka.replication }} "
+  shell: "/opt/kafka/bin/kafka-topics.sh --zookeeper {{ site.zookeeper }} --create --topic {{ item }}  --partitions {{ resources.kafka.partitions }} --replication-factor {{ resources.kafka.replication }} "
   become: kafka
   with_items: "{{ resources.kafka.topics }}"
   run_once: true

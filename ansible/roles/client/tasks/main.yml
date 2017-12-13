@@ -1,8 +1,8 @@
 - name: "create user {{ username }}"
   user:
     name: "{{ username }}"
-    # python -c 'import crypt; print crypt.crypt("my Password", "$1$SomeSalt$")'
-    password: $1$SomeSalt$cFiNA3xJV0j/CUE92WjPL0
+    # python -c 'import crypt; print crypt.crypt("password", "$1$SomeSalt$")'
+    password: $1$SomeSalt$/jbIwfYCu0MxPBND2EtRH.
     groups: users,spark
 
 - name: add local public key

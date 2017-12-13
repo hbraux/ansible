@@ -8,7 +8,7 @@ resources:
     shards: 1
     replicas: "{{ servers.elasticsearch | length -1 }}"
     indexes:
-      - index2
+      - index1
 
 
 

@@ -1,0 +1,8 @@
+tickTime=2000
+dataDir={{ datadir }}
+clientPort={{ port.zookeeper }}
+initLimit=5
+syncLimit=2
+{% for name in servers.zookeeper %}
+server.{{ loop.index }}={{ name }}:2888:3888
+{% endfor %}

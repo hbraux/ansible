@@ -1,32 +1,4 @@
-- name: create zookeeper directory
-  file:
-    path: /opt/zookeeper
-    state: directory
-    mode: 755
+# erything is done by generic install script
 
-- name: "upload {{ package }}"
-  copy:
-    src: "{{ cache.local }}/{{ package }}"
-    dest: "{{ cache.dest }}/{{ package }}"
-  
-- name: "install {{ package }}"
-  yum:
-    name: "{{ cache.dest }}/{{ package }}"
-    state: present
-    
-- name: configure zookeeper
-  template:
-    src: zoo.j2
-    dest: /etc/zookeeper/zoo.cfg
+- import_tasks: "{{ playbook_dir }}/common/install.yml"
 
-- name: create myid file
-  copy:
-    content: |
-      {{ hostvars[inventory_hostname].zk_id }}
-    dest: "{{ zookeeper.datadir }}/myid"
-
-- name: start zookeeper
-  systemd:
-    state: started
-    name: zookeeper
-                              

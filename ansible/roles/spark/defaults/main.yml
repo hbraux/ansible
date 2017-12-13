@@ -2,8 +2,6 @@ spark:
   version: "1.6.3"
   hadoop_version: "2.6"
   datadir: /var/lib/spark
-  mirror: http://d3kbcqa49mib13.cloudfront.net
-
 
 spark_dir: "spark-{{ spark.version }}-bin-hadoop{{ spark.hadoop_version }}"
 spark_path: "/opt/{{ spark_dir }}"
