@@ -12,7 +12,7 @@
 - hosts: kafka
   roles:
     - kafka
-  
+
 - hosts: elasticsearch
   roles:
     - elasticsearch

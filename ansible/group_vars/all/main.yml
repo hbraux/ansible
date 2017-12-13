@@ -5,7 +5,8 @@ proxy_env:
 # download sites
 mirror:
   apache: http://apache.crihan.fr/dist
-
+  elastic: http://artifacts.elastic.co/downloads
+  
 # cache for download
 cache:
   local: "{{ lookup('env','DEPLOY_CACHE') }}"

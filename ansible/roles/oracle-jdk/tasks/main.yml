@@ -1,12 +1,4 @@
-- name: "upload {{ package }}"
-  copy:
-    src: "{{ cache.local }}/{{ package }}"
-    dest: "{{ cache.dest }}/{{ package }}"
-  
-- name: "install {{ package }}"
-  yum:
-    name: "{{ cache.dest }}/{{ package }}"
-    state: present
+- import_tasks: "{{ playbook_dir }}/common/install-rpm.yml"
 
 
 

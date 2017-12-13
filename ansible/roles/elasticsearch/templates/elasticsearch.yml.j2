@@ -1,0 +1,3 @@
+cluster.name: {{ hostvars[inventory_hostname].es_name }}
+network.host: _site_
+discovery.zen.ping.unicast.hosts: [ {{ servers.elasticsearch | join(',') }} }

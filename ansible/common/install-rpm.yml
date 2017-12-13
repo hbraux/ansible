@@ -1,0 +1,44 @@
+# generic script to install a RPM
+
+- name: installation of {{ install.module }}-{{ install.version }}
+  set_fact:
+    archive: "{{ install.module }}-{{ install.version }}{{ install.build }}.rpm"
+
+- name: check if {{ archive }} is in {{ cache.local }}/
+  command: test -f {{ cache.local }}/{{ archive }}
+  register: is_downloaded
+  changed_when: False
+  delegate_to: localhost
+  
+- name: download {{ archive }} from {{ install.url }}
+  get_url:
+    url: "{{ install.url }}/{{ archive }}"
+    dest: "{{ cache.local }}"
+  environment: "{{proxy_env}}"
+  when: is_downloaded.rc == 1
+  delegate_to: localhost
+
+- name: upload {{ archive }} to {{ inventory_hostname }} 
+  copy:
+    src: "{{ cache.local }}/{{ archive }}"
+    dest: "{{ cache.dest }}/{{ archive }}"
+  
+- name: yum install {{ archive }}
+  yum:
+    name: "{{ cache.dest }}/{{ archive }}"
+    state: present
+  register: is_installed
+
+# cleanup cause the upload to be triggered
+- name: cleanup cache
+  file:
+    path: "{{ cache.dest }}/{{ archive }}"
+    state: absent
+  when: 0
+
+- name: configure {{ install.module }}
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ install.cfg }}/{{ install.module }}/{{ item }}"
+  with_items: "{{ install.configuration }}"
+  when: install.configuration is defined

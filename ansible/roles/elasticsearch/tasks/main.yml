@@ -1,33 +1,4 @@
-- set_fact:
-    eslist: "{{ servers.elasticsearch | join(',') }}"
-
-- name: "upload {{ package }}"
-  copy:
-    src: "{{ cache.local }}/{{ package }}"
-    dest: "{{ cache.dest }}/{{ package }}"
-
-- name: "install {{ package }}"
-  yum:
-    name: "{{ cache.dest }}/{{ package }}"
-    state: present
-    
-- name: configure Cluster Name
-  lineinfile:
-    path: /etc/elasticsearch/elasticsearch.yml
-    regexp: 'cluster.name:'
-    line: 'cluster.name: {{ elasticsearch.clustername }}'
-  
-- name: configure Cluster networking
-  lineinfile:
-    path: /etc/elasticsearch/elasticsearch.yml
-    regexp: 'network.host:'
-    line: 'network.host: _site_'
-  
-- name: configure other nodes
-  lineinfile:
-    path: /etc/elasticsearch/elasticsearch.yml
-    regexp: 'discovery.zen.ping.unicast.hosts:'
-    line: "discovery.zen.ping.unicast.hosts: [ {{ eslist }} ]"
+- import_tasks: "{{ playbook_dir }}/common/install-rpm.yml"
 
 - name: start elasticsearch
   systemd:

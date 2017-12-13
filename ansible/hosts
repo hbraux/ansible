@@ -8,9 +8,9 @@ kafka1.hostonly.com broker_id=1
 kafka2.hostonly.com broker_id=2
 
 [elasticsearch]
-sandbox1.hostonly.com
-elk1.hostonly.com
-elk2.hostonly.com
+sandbox1.hostonly.com es_name=one
+elk1.hostonly.com es_name=two
+elk2.hostonly.com es_name=two
 
 [logstash]
 elk1.hostonly.com

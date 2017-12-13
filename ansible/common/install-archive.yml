@@ -1,0 +1,91 @@
+# generic script to install an Apache TAR package 
+
+- name: installation of {{ install.module }}-{{ install.version }}
+  set_fact:
+    artifact: "{{ install.module }}-{{ install.version }}"
+
+- name: declare variables
+  set_fact:
+    url: "{{ mirror.apache }}/{{ install.module }}/{{ artifact }}"
+    archive: "{{ artifact }}.tar.gz"
+    bindir: "{{ install.bin }}/{{ artifact }}"
+    logdir: "{{ install.log }}/{{ install.module }}"
+    datadir: "{{ install.data }}/{{ install.module }}"
+
+- name: create group {{ install.group }}
+  group:
+    name: "{{ install.group }}"
+    state: present
+
+- name: create user {{ install.user }}
+  user:
+    name: "{{ install.user }}"
+    group: "{{ install.group }}"
+    
+- name: create data directory {{ datadir }}
+  file:
+    path: "{{ datadir }}"
+    owner: "{{ install.user }}"
+    group: "{{ install.group }}"
+    state: directory
+    
+- name: create log directory {{ logdir }}
+  file:
+    path: "{{ logdir }}"
+    owner: "{{ install.user }}"
+    group: "{{ install.group }}"
+    state: directory
+    
+- name: check if {{ archive }} is in {{ cache.local }}/
+  command: test -f {{ cache.local }}/{{ archive }}
+  register: is_downloaded
+  changed_when: False
+  delegate_to: localhost
+  
+- name: download {{ archive }} from {{ url }}
+  get_url:
+    url: "{{ url }}/{{ archive }}"
+    dest: "{{ cache.local }}"
+  environment: "{{proxy_env}}"
+  when: is_downloaded.rc == 1
+  delegate_to: localhost
+
+- name: upload {{ archive }} to {{ inventory_hostname }} 
+  copy:
+    src: "{{ cache.local }}/{{ archive }}"
+    dest: "{{ cache.dest }}/{{ archive }}"
+  
+- name: unarchive {{ archive }}
+  unarchive:
+    src: "{{ cache.local }}/{{ archive }}"
+    dest: "{{ install.bin }}"
+    owner: "{{ install.user }}"
+    group: "{{ install.group }}"
+                          
+- name: create link {{ install.bin }}/{{ install.module }}
+  file:
+    src: "{{ bindir }}"
+    dest: "{{ install.bin }}/{{ install.module }}"
+    state: link
+
+- name: configure {{ install.module }}
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ install.cfg }}/{{ install.module }}/{{ item }}"
+  with_items: "{{ install.configuration }}"
+  when: install.configuration is defined
+  
+- name: install data files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ datadir}}/{{ item }}"
+  with_items: "{{ install.datafiles }}"
+  when: install.datafiles is defined
+  
+- name: install systemd scripts
+  template:
+    src: "{{ item }}-service.j2"
+    dest: "/etc/systemd/system/{{ item }}-service"
+  with_items: "{{ install.systemd }}"
+  when: install.systemd is defined
+  notify: start {{ item }}
