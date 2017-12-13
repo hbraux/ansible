@@ -4,7 +4,7 @@
   set_fact:
     archive: "{{ install.module }}-{{ install.version }}{{ install.build }}.rpm"
 
-- name: check if {{ archive }} is in {{ cache.local }}/
+- name: check if {{ archive }} is in {{ cache.local }}
   command: test -f {{ cache.local }}/{{ archive }}
   register: is_downloaded
   changed_when: False

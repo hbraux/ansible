@@ -1,4 +1,5 @@
-kafka:
-  version: 1.0.0-2
-  
-package: "kafka-{{ kafka.version }}.x86_64.rpm"
+install:
+  module: "kafka"
+  version: "1.0.0-2"
+  build: ".x86_64"
+  url: "http://somekafkarepo"

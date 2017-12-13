@@ -1,4 +1,6 @@
-logstash:
-  version: 5.6.4
-
-package: "logstash-{{ logstash.version }}.rpm"
+install:
+  module: "logstash"
+  version: "5.6.4"
+  build: ""
+  url: "{{ mirror.elastic }}/logstash"
+  

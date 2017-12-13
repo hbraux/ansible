@@ -1,3 +1,5 @@
 cluster.name: {{ hostvars[inventory_hostname].es_name }}
+path.data: {{ datadir }}
+path.logs: {{ logdir }}
 network.host: _site_
 discovery.zen.ping.unicast.hosts: [ {{ servers.elasticsearch | join(',') }} }
