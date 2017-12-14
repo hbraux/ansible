@@ -1,7 +1,7 @@
 install:
   type: rpm
   module: logstash
-  version: "5.6.4"
+  version: 5.6.4
   build: ""
   url: "{{ mirror.elastic }}/logstash"
   

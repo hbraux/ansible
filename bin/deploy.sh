@@ -2,11 +2,15 @@
 
 # Constants (host)
 VAGRANT_PROVIDER=virtualbox
+DEFAULT_MEMORY=1024
+DEFAULT_CPU=1
 
 # variables
 declare ServerType
-declare ServerCount
+declare ServerList
+declare -i ServerCount=0
 declare HostIp
+declare HostFile
 declare Domain
 declare VagrantStatus
 declare VagrantId
@@ -82,10 +86,10 @@ function checkVagrant {
 
        info "Creating VagrantFile for server type $ServerType"
        ServerIP=$(grep $ServerType /etc/hosts | sed 's/[0-9] .*//' |head -1)
-       ServerMemory=$(grep $ServerType /etc/hosts |grep 'mem:' | sed 's/.*mem://' | cut -d\  -f1)
-       [[ -n $ServerMemory ]] || ServerMemory=1024
-       ServerCpu=$(grep $ServerType /etc/hosts |grep 'cpu:' | sed 's/.*cpu://' | cut -d\  -f1)
-       [[ -n $ServerCpu ]] || ServerCpu=1
+       ServerMemory=$(grep $ServerType $HostFile |grep 'deploy_mem:' | sed 's/.*deploy_mem=//' | cut -d\  -f1)
+       [[ -n $ServerMemory ]] || ServerMemory=$DEFAULT_MEMORY
+       ServerCpu=$(grep $ServerType $HostFile |grep 'deploy_cpu=' | sed 's/.*deploy_cpu=//' | cut -d\  -f1)
+       [[ -n $ServerCpu ]] || ServerCpu=$DEFAULT_CPU
        cat $DEPLOY_ANSIBLE/VagrantFile | \
 	   sed -e "s/~ServerType~/$ServerType/g" \
 	       -e "s/~ServerCount~/$ServerCount/" \
@@ -103,7 +107,7 @@ function checkVagrant {
 
 
 function refreshVagrant {
-  info "Collecting Vagrant global status from $VAGRANT_PROVIDER host $HostIp"
+  info "Collecting Vagrant global status from $VAGRANT_PROVIDER host"
   ssh $HostIp "vagrant global-status" | grep $VAGRANT_PROVIDER >$VagrantStatus
 }
 
@@ -121,6 +125,8 @@ function checkAnsible {
   which ansible-playbook >/dev/null 2>&1 ||die "Ansible not installed"
   [[ -n $DEPLOY_ANSIBLE ]] || export DEPLOY_ANSIBLE=$HOME/ansible
   [[ -d $DEPLOY_ANSIBLE ]] || die "Directory $DEPLOY_ANSIBLE does not exist"
+  HostFile=$DEPLOY_ANSIBLE/hosts
+  [[ -f $HostFile ]] || die "No file $HostFile"
 }
 
 function up {
@@ -175,27 +181,32 @@ fi
 [ $# -ne 0 ] || usage
 ServerType=$1
 
-ServerCount=$(egrep -c " ${ServerType}[1-9][.]" /etc/hosts)
-[ $ServerCount -ne 0 ] || die "Cannot find any server of type ${ServerType} in /etc/hosts"
-
 # check the env
 getDomain
 getHostIp
 checkSshConf
 checkCache
 checkAnsible
-checkVagrant
+
+
+ServerList=$(grep $Domain $HostFile| grep $ServerType | cut -d\  -f1 |sort | uniq)
+[[ -n $ServerList ]] || die "Cannot find any server of type ${ServerType} in $HostFile"
+
 
 # up the servers
-for server in $(grep " ${ServerType}[1-9][.]" /etc/hosts |awk '{ print $2}')
+checkVagrant
+for server in $ServerList
 do ping -c 1 $server >/dev/null
    alive=$?
    case $mode in
      deploy)  [ $alive -ne 0 ] && up $server;;
      destroy) destroy $server;;
    esac
+   ServerCount=$((ServerCount + 1))
 done
-# run ansible
-playbook=$DEPLOY_ANSIBLE/$mode.yml
-[ -f $playbook ] && ansible-playbook -b $verbose  $playbook --limit ${ServerType}*.$Domain
 
+playbook=$DEPLOY_ANSIBLE/$mode.yml
+if [ -f $playbook ]
+then info "Executing ansible playbook $DEPLOY_ANSIBLE/$mode.yml"
+     ansible-playbook -b $verbose  $playbook --limit ${ServerType}*.$Domain
+fi

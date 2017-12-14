@@ -1,5 +1,5 @@
 [zookeeper]
-sandbox1.hostonly.com zk_id=1
+sandbox1.hostonly.com zk_id=1 deploy_cpu=4 deploy_mem=4000
 kafka1.hostonly.com zk_id=1
 kafka2.hostonly.com zk_id=2
 kafka3.hostonly.com zk_id=3
@@ -12,8 +12,8 @@ kafka3.hostonly.com broker_id=3
 
 [elasticsearch]
 sandbox1.hostonly.com es_name=one
-elk1.hostonly.com es_name=two
-elk2.hostonly.com es_name=two
+elk1.hostonly.com es_name=two deploy_mem=2000
+elk2.hostonly.com es_name=two deploy_mem=2000
 
 [logstash]
 elk1.hostonly.com
