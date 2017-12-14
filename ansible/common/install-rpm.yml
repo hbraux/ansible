@@ -39,6 +39,6 @@
 - name: configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
-    dest: "{{ install.cfg }}/{{ install.module }}/{{ item }}"
+    dest: "{{ path.cfg }}/{{ item }}"
   with_items: "{{ install.configuration }}"
   when: install.configuration is defined

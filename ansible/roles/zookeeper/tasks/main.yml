@@ -1,4 +1,2 @@
-# everything is done by the generic installation script
-
-- import_tasks: "{{ playbook_dir }}/common/install-archive.yml"
+- include_tasks: "{{ playbook_dir }}/common/install.yml"
 

@@ -1,11 +1,14 @@
 [zookeeper]
 sandbox1.hostonly.com zk_id=1
 kafka1.hostonly.com zk_id=1
+kafka2.hostonly.com zk_id=2
+kafka3.hostonly.com zk_id=3
 
 [kafka]
 sandbox1.hostonly.com broker_id=1
 kafka1.hostonly.com broker_id=1
 kafka2.hostonly.com broker_id=2
+kafka3.hostonly.com broker_id=3
 
 [elasticsearch]
 sandbox1.hostonly.com es_name=one

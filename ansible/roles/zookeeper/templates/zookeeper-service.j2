@@ -6,9 +6,9 @@ After=network.target
 Type=forking
 User=zookeeper
 Group=zookeeper
-Environment=ZOO_LOG_DIR={{ install.log }}/zookeeper ZOOCFGDIR={{ install.cfg }}/zookeeper
-CHDIR={{ install.data }}/zookeeper
-ExecStart={{ install.bin }}/zookeeper/bin/zkServer.sh start
+Environment=ZOO_LOG_DIR={{ path.log }} ZOOCFGDIR={{ path.cfg }}
+CHDIR={{ path.data }}
+ExecStart={{ path.bin }}/bin/zkServer.sh start
 
 [Install]
 WantedBy=multi-user.target

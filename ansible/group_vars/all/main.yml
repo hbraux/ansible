@@ -30,9 +30,3 @@ servers:
   kafka: "{{ groups['kafka'] | intersect(play_hosts) }}"
   spark_workers: "{{ groups['spark-worker'] | intersect(play_hosts) }}"
   
-# site variables
-site:
-  zookeeper: "{{ servers.zookeeper | join(':{0},'.format( port.zookeeper )) }}:{{ port.zookeeper }}"
-  elasticsearch: "http://{{ servers.elasticsearch[0] }}:{{ port.elasticsearch }}"
-  kafka: "{{ servers.kafka | join(':{0},'.format( port.kafka )) }}:{{ port.kafka }}"
-    

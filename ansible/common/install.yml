@@ -1,0 +1,17 @@
+- name: declare root directories
+  set_fact:
+    root:
+      bin: /opt
+      data: /var/lib
+      cfg: /etc
+      log: /var/log
+      
+- name: declare install paths {{ install.module }}  
+  set_fact:
+    path:
+      bin: "{{ root.bin }}/{{ install.module }}-{{ install.version }}"
+      data: "{{ root.data }}/{{ install.module }}"
+      cfg: "{{ root.cfg }}/{{ install.module }}"
+      log: "{{ root.log }}/{{ install.module }}"
+
+- include_tasks: "{{ playbook_dir }}/common/install-{{ install.type }}.yml"

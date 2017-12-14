@@ -4,13 +4,10 @@
   set_fact:
     artifact: "{{ install.module }}-{{ install.version }}"
 
-- name: declare variables
+- name: declare url and archive
   set_fact:
     url: "{{ mirror.apache }}/{{ install.module }}/{{ artifact }}"
     archive: "{{ artifact }}.tar.gz"
-    bindir: "{{ install.bin }}/{{ artifact }}"
-    logdir: "{{ install.log }}/{{ install.module }}"
-    datadir: "{{ install.data }}/{{ install.module }}"
 
 - name: create group {{ install.group }}
   group:
@@ -22,20 +19,28 @@
     name: "{{ install.user }}"
     group: "{{ install.group }}"
     
-- name: create data directory {{ datadir }}
+- name: create data directory {{ path.data }}
   file:
-    path: "{{ datadir }}"
+    path: "{{ path.data }}"
+    owner: "{{ install.user }}"
+    group: "{{ install.group }}"
+    state: directory
+  
+- name: create log directory {{ path.log }}
+  file:
+    path: "{{ path.log }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
     
-- name: create log directory {{ logdir }}
+- name: create config directory {{ path.cfg }}
   file:
-    path: "{{ logdir }}"
+    path: "{{ path.cfg }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
-    
+  when: install.configuration is defined
+  
 - name: check if {{ archive }} is in {{ cache.local }}
   command: test -f {{ cache.local }}/{{ archive }}
   register: is_downloaded
@@ -50,42 +55,45 @@
   when: is_downloaded.rc == 1
   delegate_to: localhost
 
-- name: upload {{ archive }} to {{ inventory_hostname }} 
-  copy:
-    src: "{{ cache.local }}/{{ archive }}"
-    dest: "{{ cache.dest }}/{{ archive }}"
-  
 - name: unarchive {{ archive }}
   unarchive:
     src: "{{ cache.local }}/{{ archive }}"
-    dest: "{{ install.bin }}"
+    dest: /opt
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
                           
-- name: create link {{ install.bin }}/{{ install.module }}
+- name: create link {{ root.bin }}/{{ install.module }} to {{ path.bin }}
   file:
-    src: "{{ bindir }}"
-    dest: "{{ install.bin }}/{{ install.module }}"
+    src: "{{ path.bin }}"
+    dest: "{{ root.bin }}/{{ install.module }}"
     state: link
 
 - name: configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
-    dest: "{{ install.cfg }}/{{ install.module }}/{{ item }}"
+    dest: "{{ path.cfg }}/{{ item }}"
+    owner: "{{ install.user }}"
+    group: "{{ install.group }}"
   with_items: "{{ install.configuration }}"
   when: install.configuration is defined
   
 - name: install data files
   template:
     src: "{{ item }}.j2"
-    dest: "{{ datadir}}/{{ item }}"
+    dest: "{{ path.data }}/{{ item }}"
+    owner: "{{ install.user }}"
+    group: "{{ install.group }}"
   with_items: "{{ install.datafiles }}"
   when: install.datafiles is defined
   
 - name: install systemd scripts
   template:
     src: "{{ item }}-service.j2"
-    dest: "/etc/systemd/system/{{ item }}-service"
-  with_items: "{{ install.systemd }}"
-  when: install.systemd is defined
-  notify: start {{ item }}
+    dest: /etc/systemd/system/{{ item }}.service
+  with_items: "{{ install.services }}"
+  when: install.services is defined
+
+- name: start services
+  service: name="{{ item }}" state=started enabled=yes
+  with_items: "{{ install.services }}"
+  when: install.services is defined

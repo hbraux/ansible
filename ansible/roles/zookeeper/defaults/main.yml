@@ -1,16 +1,13 @@
 install:
+  type: archive
   module: zookeeper
-  version: "3.4.10"
+  version: 3.4.10
   user: zookeeper
   group: zookeeper
-  bin: /opt
-  data: /var/lib
-  log: /var/log
-  cfg: /etc
   configuration:
     - zoo.cfg
   datafiles:
     - myid
-  systemd:
+  services:
     - zookeeper
     

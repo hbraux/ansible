@@ -1,9 +1,9 @@
 install:
-  module: "elasticsearch"
-  version: "5.6.4"
+  type: rpm
+  module: elasticsearch
+  version: 5.6.4
   build: ""
   url: "{{ mirror.elastic }}/elasticsearch"
-  cfg: /etc
   configuration:
     - elasticsearch.yml
 
