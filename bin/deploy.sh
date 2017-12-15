@@ -9,6 +9,7 @@ DEFAULT_CPU=1
 declare ServerType
 declare ServerList
 declare -i ServerCount=0
+declare Playbook
 declare HostIp
 declare HostFile
 declare Domain
@@ -38,7 +39,7 @@ function getDomain {
 
 function getHostIp {
   HostIp=$(netstat -rn  | grep eth0 | grep '255.255.255' | cut -d\  -f1 | sed 's/.0$/.1/')
-  nc -w 1 $HostIp 22 </dev/null >/dev/null || die "port 22 not opened on $VAGRANT_PROVIDER host $HostIp (start freeSSHd)"
+  nc -w 1 $HostIp 22 </dev/null >/dev/null || die "port 22 not opened on $VAGRANT_PROVIDER host $HostIp -> start freeSSHd!"
 }
 
 
@@ -68,41 +69,47 @@ function checkCache {
   fi
 }
 
+function uploadVagrantFile {
+  info "Creating VagrantFile for server type $ServerType"
+  ServerIP=$(grep $ServerType /etc/hosts | sed 's/[0-9] .*//' |head -1)
+  ServerMemory=$(grep $ServerType $HostFile |grep 'deploy_mem:' | sed 's/.*deploy_mem=//' | cut -d\  -f1)
+  [[ -n $ServerMemory ]] || ServerMemory=$DEFAULT_MEMORY
+  ServerCpu=$(grep $ServerType $HostFile |grep 'deploy_cpu=' | sed 's/.*deploy_cpu=//' | cut -d\  -f1)
+  [[ -n $ServerCpu ]] || ServerCpu=$DEFAULT_CPU
+  cat $DEPLOY_ANSIBLE/VagrantFile | \
+      sed -e "s/~ServerType~/$ServerType/g" \
+	  -e "s/~ServerCount~/$ServerCount/g" \
+	  -e "s/~ServerMemory~/$ServerMemory/g" \
+	  -e "s/~ServerCpu~/$ServerCpu/g" \
+	  -e "s/~Domain~/$Domain/g" \
+	  -e "s|~VagrantData~|$DEPLOY_VAGRANT|g" \
+	  -e "s/~ServerIp~/$ServerIP/g" >VagrantFile || die
+  
+  info "Uploading VagrantFile to $VAGRANT_PROVIDER host"
+  sftp $HostIp:/$ServerType <<<$'put VagrantFile' >/dev/null || die
+}
+
 function checkVagrant {
   VagrantStatus=$HOME/.vagrant
   [[ -n $DEPLOY_VAGRANT ]] || DEPLOY_VAGRANT="E:/Vagrant"
-  sftp $HostIp:/id_rsa.pub id_rsa.pub 1>/dev/null 2>&1
+  sftp $HostIp:/id_rsa.pub id_rsa.tmp 1>/dev/null 2>&1
   if [ $? -ne 0 ]
   then info "Uploading id_rsa.pub to $VAGRANT_PROVIDER host"
        pushd $HOME/.ssh >/dev/null
        sftp $HostIp:/ <<<$'put id_rsa.pub' >/dev/null || die
        popd >/dev/null
-  else rm -f id_rsa.pub
+  else rm -f id_rsa.tmp
   fi
+  pushd /tmp >/dev/null
   sftp $HostIp:/$ServerType/VagrantFile VagrantFile 1>/dev/null 2>&1
   if [ $? -ne 0 ]
   then info "Creating directory $DEPLOY_VAGRANT/$ServerType on $VAGRANT_PROVIDER host"
        sftp $HostIp <<<$"mkdir $ServerType" >/dev/null || die
-
-       info "Creating VagrantFile for server type $ServerType"
-       ServerIP=$(grep $ServerType /etc/hosts | sed 's/[0-9] .*//' |head -1)
-       ServerMemory=$(grep $ServerType $HostFile |grep 'deploy_mem:' | sed 's/.*deploy_mem=//' | cut -d\  -f1)
-       [[ -n $ServerMemory ]] || ServerMemory=$DEFAULT_MEMORY
-       ServerCpu=$(grep $ServerType $HostFile |grep 'deploy_cpu=' | sed 's/.*deploy_cpu=//' | cut -d\  -f1)
-       [[ -n $ServerCpu ]] || ServerCpu=$DEFAULT_CPU
-       cat $DEPLOY_ANSIBLE/VagrantFile | \
-	   sed -e "s/~ServerType~/$ServerType/g" \
-	       -e "s/~ServerCount~/$ServerCount/" \
-	       -e "s/~ServerMemory~/$ServerMemory/" \
-	       -e "s/~ServerCpu~/$ServerCpu/" \
-	       -e "s/~Domain~/$Domain/" \
-	       -e "s|~VagrantData~|$DEPLOY_VAGRANT|" \
-	       -e "s/~ServerIp~/$ServerIP/" >VagrantFile || die
-       
-       info "Uploading VagrantFile to $VAGRANT_PROVIDER host"
-       sftp $HostIp:/$ServerType <<<$'put VagrantFile' >/dev/null || die
+       uploadVagrantFile
+  else [ $(head -1 VagrantFile | grep -c "\[$ServerCount\]") -eq 1 ] || uploadVagrantFile 
   fi
   rm -f VagrantFile
+  popd >/dev/null
 }
 
 
@@ -127,6 +134,8 @@ function checkAnsible {
   [[ -d $DEPLOY_ANSIBLE ]] || die "Directory $DEPLOY_ANSIBLE does not exist"
   HostFile=$DEPLOY_ANSIBLE/hosts
   [[ -f $HostFile ]] || die "No file $HostFile"
+  Playbook=$DEPLOY_ANSIBLE/$1.yml
+  [[ -f $Playbook ]] || die "No playbook file $Playbook"
 }
 
 function up {
@@ -179,19 +188,26 @@ then mode=destroy; shift
 fi
 
 [ $# -ne 0 ] || usage
-ServerType=$1
+pattern=$1
+ServerType=$pattern
+l=$((${#pattern}-1))
+case "${pattern:$l:1}" in
+  [1-9]) ServerType=${pattern:0:$l};;
+esac
 
 # check the env
 getDomain
 getHostIp
 checkSshConf
 checkCache
-checkAnsible
+checkAnsible $mode
 
+ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
+[[ -n $ServerList ]] || die "Cannot find any server matching $pattern"
 
-ServerList=$(grep $Domain $HostFile| grep $ServerType | cut -d\  -f1 |sort | uniq)
-[[ -n $ServerList ]] || die "Cannot find any server of type ${ServerType} in $HostFile"
-
+for server in $ServerList
+do ServerCount=$((ServerCount + 1))
+done
 
 # up the servers
 checkVagrant
@@ -202,11 +218,9 @@ do ping -c 1 $server >/dev/null
      deploy)  [ $alive -ne 0 ] && up $server;;
      destroy) destroy $server;;
    esac
-   ServerCount=$((ServerCount + 1))
 done
-
-playbook=$DEPLOY_ANSIBLE/$mode.yml
-if [ -f $playbook ]
-then info "Executing ansible playbook $DEPLOY_ANSIBLE/$mode.yml"
-     ansible-playbook -b $verbose  $playbook --limit ${ServerType}*.$Domain
+if [[ $mode != destroy ]]
+then
+  info "Executing ansible playbook $Playbook"
+  ansible-playbook -b $verbose  $Playbook --limit "$pattern*.$Domain"
 fi
