@@ -1,19 +1,5 @@
-- name: determine index settings
-  set_fact:
-    body: '{"settings":{"index":{"number_of_shards":{{ resources.elasticsearch.shards }},"number_of_replicas":{{ resources.elasticsearch.replicas }} }}}'
+- include_tasks: elasticsearch.yml
+  when: servers.elasticsearch | length >0
 
-- name: create Elastic indexes
-  uri:
-    url: http://{{ servers.elasticsearch[0] }}:{{ port.elasticsearch }}/{{ item }}
-    method: PUT
-    bofy_format: json
-    body: "{{ body | to_json }}"
-  with_items: "{{ resources.elasticsearch.indexes }}"
-  run_once: true
-
-- name: create Kafka topics
-  shell: "/opt/kafka/bin/kafka-topics.sh --zookeeper {{ site.zookeeper }} --create --topic {{ item }}  --partitions {{ resources.kafka.partitions }} --replication-factor {{ resources.kafka.replication }} "
-  become: kafka
-  with_items: "{{ resources.kafka.topics }}"
-  run_once: true
-  
+- include_tasks: kafka.yml
+  when: servers.kafka | length >0

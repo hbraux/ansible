@@ -1,0 +1,19 @@
+- name: determine index settings
+  set_fact:
+    body: '{"settings":{"index":{"number_of_shards":{{ resources.elasticsearch.shards }},"number_of_replicas":{{ resources.elasticsearch.replicas }} }}}'
+
+- name: wait for Elasticsearch to be up
+  wait_for:
+    host: "{{ servers.elasticsearch[0] }}"
+    port: "{{ port.elasticsearch }}"
+    timeout: 60
+    state: started
+  
+- name: create Elastic indexes
+  uri:
+    url: http://{{ servers.elasticsearch[0] }}:{{ port.elasticsearch }}/{{ item }}
+    method: PUT
+    bofy_format: json
+    body: "{{ body | to_json }}"
+  with_items: "{{ resources.elasticsearch.indexes }}"
+  run_once: true

@@ -1,23 +1,6 @@
-- import_tasks: "{{ playbook_dir }}/common/install.yml"
-
 - name: set site.zookeeper
   set_fact:
     site:
       zookeeper: '{{ servers.zookeeper | join(":{0},".format( port.zookeeper )) }}:{{ port.zookeeper }}'
 
-- name: configure Zookeeper connection
-  lineinfile:
-    path: /etc/kafka/server.properties
-    regexp: "zookeeper.connect="
-    line: "zookeeper.connect={{ site.zookeeper }}"
-
-- name: configure Broker Id
-  lineinfile:
-    path: /etc/kafka/server.properties
-    regexp: "broker.id="
-    line: "broker.id={{ hostvars[inventory_hostname].broker_id }}"
- 
-- name: start kafka
-  systemd:
-    state: started
-    name: kafka
+- import_tasks: "{{ playbook_dir }}/common/install.yml"

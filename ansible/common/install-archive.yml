@@ -2,12 +2,19 @@
 
 - name: installation of {{ install.module }}-{{ install.version }}
   set_fact:
-    artifact: "{{ install.module }}-{{ install.version }}"
+    dummyvar: 0
+    
+- set_fact:
+    url: "{{ mirror.apache }}/{{ install.file | dirname }}"
+    archive: "{{ install.file | basename }}"
+    binpath: "{{ root.bin }}/{{ install.bindir }}"
+  when: install.file is defined
 
-- name: declare url and archive
-  set_fact:
-    url: "{{ mirror.apache }}/{{ install.module }}/{{ artifact }}"
-    archive: "{{ artifact }}.tar.gz"
+- set_fact:
+    url: "{{ mirror.apache }}/{{ install.module }}/{{ install.module }}-{{ install.version }}"
+    archive: "{{ install.module }}-{{ install.version }}.tar.gz"
+    binpath: "{{ path.bin }}"
+  when: install.file is not defined
 
 - name: create group {{ install.group }}
   group:
@@ -42,9 +49,9 @@
   when: install.configuration is defined
   
 - name: check if {{ archive }} is in {{ cache.local }}
-  command: test -f {{ cache.local }}/{{ archive }}
-  register: is_downloaded
-  changed_when: False
+  stat:
+    path: "{{ cache.local }}/{{ archive }}"
+  register: f
   delegate_to: localhost
   
 - name: download {{ archive }} from {{ url }}
@@ -52,7 +59,7 @@
     url: "{{ url }}/{{ archive }}"
     dest: "{{ cache.local }}"
   environment: "{{proxy_env}}"
-  when: is_downloaded.rc == 1
+  when: not f.stat.exists 
   delegate_to: localhost
 
 - name: unarchive {{ archive }}
@@ -62,9 +69,9 @@
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
                           
-- name: create link {{ root.bin }}/{{ install.module }} to {{ path.bin }}
+- name: create link {{ root.bin }}/{{ install.module }} to {{ binpath }}
   file:
-    src: "{{ path.bin }}"
+    src: "{{ binpath }}"
     dest: "{{ root.bin }}/{{ install.module }}"
     state: link
 

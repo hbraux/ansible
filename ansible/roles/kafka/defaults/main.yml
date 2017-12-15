@@ -1,8 +1,12 @@
 install:
-  type: rpm
+  type: archive
   module: kafka
-  version: 1.0.0-2
-  build: .x86_64
-  url: http://somekafkarepo
-
-    
+  user: kafka
+  group: kafka
+  version: 1.0.0
+  file: kafka/1.0.0/kafka_2.11-1.0.0.tgz
+  bindir: kafka_2.11-1.0.0
+  configuration:
+    - server.properties
+  services:
+    - kafka

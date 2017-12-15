@@ -1,0 +1,14 @@
+[Unit]
+Description=Kafka
+After=network.target
+
+[Service]
+User=kafka
+Environment=LOG_DIR={{ path.log }} 
+CHDIR= {{ path.data }}
+ExecStart={{ binpath }}/bin/kafka-server-start.sh {{ path.cfg }}/server.properties
+
+[Install]
+WantedBy=multi-user.target
+
+
