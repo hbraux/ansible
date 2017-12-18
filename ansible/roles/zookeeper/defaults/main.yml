@@ -1,13 +1,17 @@
+# install details
 install:
   type: archive
   module: zookeeper
   version: 3.4.10
   user: zookeeper
   group: zookeeper
-  configuration:
+  port: "{{ global.ports.zookeeper }}"
+  cfg:
     - zoo.cfg
-  datafiles:
+  data:
     - myid
   services:
     - zookeeper
-
+  checks:
+    port: yes
+    

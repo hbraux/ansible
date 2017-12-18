@@ -1,19 +1,16 @@
-# generic script to install an Apache TAR package 
-
 - name: installation of {{ install.module }}-{{ install.version }}
-  set_fact:
-    dummyvar: 0
+  debug:
+    msg: install={{ install }}
+    verbosity: 1
     
 - set_fact:
-    url: "{{ mirror.apache }}/{{ install.file | dirname }}"
+    url: "{{ global.mirrors.apache }}/{{ install.file | dirname }}"
     archive: "{{ install.file | basename }}"
-    binpath: "{{ root.bin }}/{{ install.bindir }}"
   when: install.file is defined
 
 - set_fact:
-    url: "{{ mirror.apache }}/{{ install.module }}/{{ install.module }}-{{ install.version }}"
+    url: "{{ global.mirrors.apache }}/{{ install.module }}/{{ install.module }}-{{ install.version }}"
     archive: "{{ install.module }}-{{ install.version }}.tar.gz"
-    binpath: "{{ path.bin }}"
   when: install.file is not defined
 
 - name: create group {{ install.group }}
@@ -26,72 +23,73 @@
     name: "{{ install.user }}"
     group: "{{ install.group }}"
     
-- name: create data directory {{ path.data }}
+- name: create data directory {{ install.path.data }}
   file:
-    path: "{{ path.data }}"
+    path: "{{ install.path.data }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
   
-- name: create log directory {{ path.log }}
+- name: create log directory {{ install.path.log }}
   file:
-    path: "{{ path.log }}"
+    path: "{{ install.path.log }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
     
-- name: create config directory {{ path.cfg }}
+- name: create config directory {{ install.path.cfg }}
   file:
-    path: "{{ path.cfg }}"
+    path: "{{ install.path.cfg }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
-  when: install.configuration is defined
+  when: install.cfg is defined
   
-- name: check if {{ archive }} is in {{ cache.local }}
+- name: check if {{ archive }} is in {{ global.localhost.cache }}
   stat:
-    path: "{{ cache.local }}/{{ archive }}"
+    path: "{{ global.localhost.cache }}/{{ archive }}"
   register: f
   delegate_to: localhost
   
 - name: download {{ archive }} from {{ url }}
   get_url:
     url: "{{ url }}/{{ archive }}"
-    dest: "{{ cache.local }}"
-  environment: "{{proxy_env}}"
+    dest: "{{ global.localhost.cache  }}"
+  environment:
+    http_proxy: "{{ global.localhost.http_proxy }}"
   when: not f.stat.exists 
   delegate_to: localhost
 
 - name: unarchive {{ archive }}
   unarchive:
-    src: "{{ cache.local }}/{{ archive }}"
+    src: "{{ global.localhost.cache }}/{{ archive }}"
     dest: /opt
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
                           
-- name: create link {{ root.bin }}/{{ install.module }} to {{ binpath }}
+- name: create link {{ install.path.opt }} to {{ install.path.bin }}
   file:
-    src: "{{ binpath }}"
-    dest: "{{ root.bin }}/{{ install.module }}"
+    src: "{{ install.path.bin }}"
+    dest: "{{ install.path.opt }}"
     state: link
 
 - name: configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
-    dest: "{{ path.cfg }}/{{ item }}"
+    dest: "{{ install.path.cfg }}/{{ item }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
-  with_items: "{{ install.configuration }}"
-  when: install.configuration is defined
+  with_items: "{{ install.cfg }}"
+  when: install.cfg is defined
   
-- name: install data files
+- name: create data files
   template:
     src: "{{ item }}.j2"
-    dest: "{{ path.data }}/{{ item }}"
+    dest: "{{ install.path.data }}/{{ item }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
-  with_items: "{{ install.datafiles }}"
-  when: install.datafiles is defined
+  with_items: "{{ install.data }}"
+  when: install.data is defined
   
 - name: install systemd scripts
   template:
@@ -104,3 +102,4 @@
   service: name="{{ item }}" state=started enabled=yes
   with_items: "{{ install.services }}"
   when: install.services is defined
+

@@ -1,4 +1,5 @@
 node.name: ${HOSTNAME}
 cluster.name: {{ hostvars[inventory_hostname].es_name }}
-network.host: _site_
-discovery.zen.ping.unicast.hosts: [ {{ servers.elasticsearch | join(',') }} ]
+network.host: [_local_,_site_]
+http.port: {{ install.port }}
+discovery.zen.ping.unicast.hosts: [ {{ global.servers.elasticsearch | join(',') }} ]

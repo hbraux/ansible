@@ -6,9 +6,10 @@ After=network.target network-online.target
 [Service]
 Type=forking
 User=spark
-WorkingDirectory={{ spark.datadir }}
-ExecStart={{ spark_path }}/sbin/start-master.sh --port {{ port.spark_master }} --webui-port {{ port.spark_master_ui }} 
-ExecStop={{ spark_path }}/sbin/sbin/stop-master.sh
+WorkingDirectory={{ path.data }}
+Environment=SPARK_CONF_DIR={{ path.cfg }} SPARK_LOG_DIR={{ path.log }}
+ExecStart={{ binpath }}/sbin/start-master.sh --port {{ port.spark_master }} --webui-port {{ port.spark_master_ui }} 
+ExecStop={{ binpath }}/sbin/sbin/stop-master.sh
 Restart=on-abort
 
 [Install]

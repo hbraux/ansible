@@ -3,10 +3,11 @@ Description=Kafka
 After=network.target
 
 [Service]
-User=kafka
-Environment=LOG_DIR={{ path.log }} 
-CHDIR= {{ path.data }}
-ExecStart={{ binpath }}/bin/kafka-server-start.sh {{ path.cfg }}/server.properties
+User={{ install.user }}
+Group={{ install.group }}
+Environment=LOG_DIR={{ install.path.log }} 
+CHDIR={{ install.path.data }}
+ExecStart={{ install.path.bin }}/bin/kafka-server-start.sh {{ install.path.cfg }}/server.properties
 
 [Install]
 WantedBy=multi-user.target

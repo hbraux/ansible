@@ -3,4 +3,9 @@ install:
   module: kibana
   version: 5.6.4
   build: "-x86_64"
-  url: "{{ mirror.elastic }}/kibana"
+  port: "{{ global.ports.kibana }}"
+  url: "{{ global.mirrors.elastic }}/kibana"
+  cfg:
+    - kibana.yml
+  checks:
+    port: yes

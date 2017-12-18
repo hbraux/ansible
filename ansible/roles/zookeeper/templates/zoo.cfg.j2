@@ -1,8 +1,8 @@
 tickTime=2000
-dataDir={{ path.data }}
-clientPort={{ port.zookeeper }}
+dataDir={{ install.path.data }}
+clientPort={{ install.port }}
 initLimit=5
 syncLimit=2
-{% for name in servers.zookeeper %}
+{% for name in groups['zookeeper'] | intersect(play_hosts) %}
 server.{{ loop.index }}={{ name }}:2888:3888
 {% endfor %}

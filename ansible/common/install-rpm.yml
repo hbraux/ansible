@@ -1,44 +1,45 @@
-# generic script to install a RPM
-
 - name: installation of {{ install.module }}-{{ install.version }}
-  set_fact:
+  debug:
+    msg: install={{ install }}
+    verbosity: 1
+  
+- set_fact:
     archive: "{{ install.module }}-{{ install.version }}{{ install.build }}.rpm"
 
-- name: check if {{ archive }} is in {{ cache.local }}
-  command: test -f {{ cache.local }}/{{ archive }}
-  register: is_downloaded
-  changed_when: False
+- name: check if {{ archive }} is in {{ global.localhost.cache }}
+  stat:
+    path: "{{ global.localhost.cache }}/{{ archive }}"
+  register: f
   delegate_to: localhost
-  
+
 - name: download {{ archive }} from {{ install.url }}
   get_url:
     url: "{{ install.url }}/{{ archive }}"
-    dest: "{{ cache.local }}"
-  environment: "{{proxy_env}}"
-  when: is_downloaded.rc == 1
+    dest: "{{ global.localhost.cache }}"
+  environment:
+      http_proxy: "{{ global.localhost.http_proxy }}"
+  when: not f.stat.exists
   delegate_to: localhost
 
 - name: upload {{ archive }} to {{ inventory_hostname }} 
   copy:
-    src: "{{ cache.local }}/{{ archive }}"
-    dest: "{{ cache.dest }}/{{ archive }}"
+    src: "{{ global.localhost.cache }}/{{ archive }}"
+    dest: "{{ install.path.tmp }}/{{ archive }}"
   
 - name: yum install {{ archive }}
   yum:
-    name: "{{ cache.dest }}/{{ archive }}"
+    name: "{{ install.path.tmp }}/{{ archive }}"
     state: present
   register: is_installed
-
-# cleanup cause the upload to be triggered
-- name: cleanup cache
-  file:
-    path: "{{ cache.dest }}/{{ archive }}"
-    state: absent
-  when: 0
 
 - name: configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
-    dest: "{{ path.cfg }}/{{ item }}"
-  with_items: "{{ install.configuration }}"
-  when: install.configuration is defined
+    dest: "{{ install.path.cfg }}/{{ item }}"
+  with_items: "{{ install.cfg }}"
+  when: install.cfg is defined
+
+- name: start services
+  service: name="{{ item }}" state=started enabled=yes
+  with_items: "{{ install.services }}"
+  when: install.services is defined

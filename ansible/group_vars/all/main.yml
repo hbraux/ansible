@@ -1,32 +1,20 @@
-# proxy
-proxy_env:
-  http_proxy: "{{ lookup('env','PROXY') }}"
-  
-# download sites
-mirror:
-  apache: http://apache.crihan.fr/dist
-  elastic: http://artifacts.elastic.co/downloads
-  
-# cache for download
-cache:
-  local: "{{ lookup('env','DEPLOY_CACHE') }}"
-  dest: /tmp
+global:
+  localhost:
+    cache: "{{ lookup('env','DEPLOY_CACHE') }}"
+    proxy: "{{ lookup('env','PROXY') }}"
+  mirrors:
+    apache: http://apache.crihan.fr/dist
+    elastic: http://artifacts.elastic.co/downloads
+  ports:
+    elasticsearch: 9200
+    zookeeper: 2182
+    kafka: 9097
+    spark_masterui: 8077
+    spark_workerui: 8078
+    nifi: 8080
+  servers:
+    elasticsearch: "{{ groups['elasticsearch'] | intersect(play_hosts) }}"
+    zookeeper: "{{ groups['zookeeper'] | intersect(play_hosts) }}"
+    kafka: "{{ groups['kafka'] | intersect(play_hosts) }}"
+    spark_workers: "{{ groups['spark-worker'] | intersect(play_hosts) }}"
 
-# TODO: check that ports are handled in scripts (zk: ok)
-port:
-  elasticsearch: 9200
-  nifi: 8080
-  zookeeper: 2181
-  kafka: 9096
-  spark_master: 7077
-  spark_worker: 7078
-  spark_master_ui: 8077
-  spark_worker_ui: 8078
-
-# list of servers
-servers:
-  zookeeper: "{{ groups['zookeeper'] | intersect(play_hosts) }}"
-  elasticsearch: "{{ groups['elasticsearch'] | intersect(play_hosts) }}"
-  kafka: "{{ groups['kafka'] | intersect(play_hosts) }}"
-  spark_workers: "{{ groups['spark-worker'] | intersect(play_hosts) }}"
-  

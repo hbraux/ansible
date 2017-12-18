@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=forking
-User=zookeeper
-Group=zookeeper
-Environment=ZOO_LOG_DIR={{ path.log }} ZOOCFGDIR={{ path.cfg }}
-CHDIR={{ path.data }}
-ExecStart={{ path.bin }}/bin/zkServer.sh start
+User={{ install.user }}
+Group={{ install.group }}
+Environment=ZOO_LOG_DIR={{ install.path.log }} ZOOCFGDIR={{ install.path.cfg }}
+CHDIR={{ install.path.data }}
+ExecStart={{ install.path.bin }}/bin/zkServer.sh start
 
 [Install]
 WantedBy=multi-user.target

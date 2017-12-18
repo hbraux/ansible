@@ -1,4 +1,4 @@
-- import_tasks: "{{ playbook_dir }}/common/install-rpm.yml"
+- import_tasks: "{{ playbook_dir }}/common/install.yml"
 
 
 

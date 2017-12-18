@@ -5,8 +5,11 @@ install:
   group: kafka
   version: 1.0.0
   file: kafka/1.0.0/kafka_2.11-1.0.0.tgz
-  bindir: kafka_2.11-1.0.0
-  configuration:
+  dir: kafka_2.11-1.0.0
+  port: "{{ global.ports.kafka }}"
+  cfg:
     - server.properties
   services:
     - kafka
+  checks:
+    port: yes

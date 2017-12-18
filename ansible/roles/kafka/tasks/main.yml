@@ -1,6 +1,1 @@
-- name: set site.zookeeper
-  set_fact:
-    site:
-      zookeeper: '{{ servers.zookeeper | join(":{0},".format( port.zookeeper )) }}:{{ port.zookeeper }}'
-
 - import_tasks: "{{ playbook_dir }}/common/install.yml"

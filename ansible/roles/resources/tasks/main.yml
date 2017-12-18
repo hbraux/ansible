@@ -1,5 +1,6 @@
-- include_tasks: elasticsearch.yml
-  when: servers.elasticsearch | length >0
-
 - include_tasks: kafka.yml
-  when: servers.kafka | length >0
+  when: global.servers.kafka | length >0
+
+- include_tasks: elasticsearch.yml
+  when: global.servers.elasticsearch | length >0
+

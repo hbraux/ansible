@@ -1,12 +1,10 @@
-- name: wait for Borkers to be up
-  wait_for:
-    host: "{{ servers.kafka[0] }}"
-    port: "{{ port.kafka }}"
-    timeout: 60
-    state: started
+# Create kafka topics
+
+- set_fact:
+    zkconn: '{{ global.servers.zookeeper | join(":{0},".format( global.ports.zookeeper )) }}:{{ global.ports.zookeeper }}'
     
 - name: create Kafka topics
-  shell: "/opt/kafka/bin/kafka-topics.sh --zookeeper {{ site.zookeeper }} --create --topic {{ item }}  --partitions {{ resources.kafka.partitions }} --replication-factor {{ resources.kafka.replication }} "
+  shell: "/opt/kafka/bin/kafka-topics.sh --zookeeper {{ zkconn }} --create --topic {{ item }}  --partitions {{ resources.kafka.partitions }} --replication-factor {{ resources.kafka.replication }} "
   become: kafka
   with_items: "{{ resources.kafka.topics }}"
   run_once: true

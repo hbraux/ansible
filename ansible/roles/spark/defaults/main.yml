@@ -1,11 +1,13 @@
-spark:
-  version: "1.6.3"
-  hadoop_version: "2.6"
-  datadir: /var/lib/spark
-
-spark_dir: "spark-{{ spark.version }}-bin-hadoop{{ spark.hadoop_version }}"
-spark_path: "/opt/{{ spark_dir }}"
-
-package: "{{ spark_dir }}.tgz"
-
+install:
+  type: archive
+  module: spark
+  version: 1.6.3
+  user: spark
+  group: spark
+  file: spark-1.6.3/spark-1.6.3-bin-hadoop2.6.tgz
+  bindir: spark-1.6.3-bin-hadoop2.6
+  configuration:
+    - spark-env.sh
+    - spark-defaults.conf
+    
 
