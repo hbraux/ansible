@@ -11,12 +11,17 @@
     state: present
     key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
     
-- name: set site variables
-  set_fact:
-    site:
-      zookeeper: '{{ servers.zookeeper | join(":{0},".format( port.zookeeper )) }}:{{ port.zookeeper }}'
-      elasticsearch: "http://{{ servers.elasticsearch[0] }}:{{ port.elasticsearch }}"
-      kafka: "{{ servers.kafka | join(':{0},'.format( port.kafka )) }}:{{ port.kafka }}"
+- name: upload site files
+  copy:
+    src: "{{ global.localhost.sitedir }}"
+    dest: /home/{{ username }}/site.d
+
+- name: update bashrc
+  template:
+    src: bashrc.j2
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
+
 
 - name: update bashrc
   template:

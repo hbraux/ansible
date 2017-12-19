@@ -5,7 +5,6 @@ install:
   group: kafka
   version: 1.0.0
   file: kafka/1.0.0/kafka_2.11-1.0.0.tgz
-  dir: kafka_2.11-1.0.0
   port: "{{ global.ports.kafka }}"
   cfg:
     - server.properties
@@ -13,3 +12,10 @@ install:
     - kafka
   checks:
     port: yes
+  site: site-kafka.sh
+  vars:
+    brokers: "{{ groups['kafka'] | intersect(play_hosts) | join(':{0},'.format( global.ports.kafka )) }}:{{ global.ports.kafka }}"
+    zkconn: '{{ groups["zookeeper"] | intersect(play_hosts) | join(":{0},".format( global.ports.zookeeper )) }}:{{ global.ports.zookeeper }}'
+
+
+

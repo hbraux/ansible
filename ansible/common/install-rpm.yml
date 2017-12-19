@@ -31,15 +31,26 @@
     name: "{{ install.path.tmp }}/{{ archive }}"
     state: present
   register: is_installed
-
+  become: true
+  
 - name: configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
     dest: "{{ install.path.cfg }}/{{ item }}"
+    owner: "{{ install.user }}"
   with_items: "{{ install.cfg }}"
   when: install.cfg is defined
+  become: true
 
-- name: start services
+- name: start services for {{ install.module }}
   service: name="{{ item }}" state=started enabled=yes
   with_items: "{{ install.services }}"
   when: install.services is defined
+  become: true
+
+- name: create site file for {{ install.module }}
+  template:
+    src: "{{ install.site }}.j2"
+    dest: "{{ global.localhost.sitedir }}/{{ install.site }}"
+  when: install.site is defined
+  delegate_to: localhost

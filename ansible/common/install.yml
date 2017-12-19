@@ -1,16 +1,17 @@
 # Generic installation playbook
 # - Supports installation of RPM and (Apache) archive 
-# - requires the dictionary 'install' to be defined in role's default with at least the mandatory keys:
-#   type (archive or rpm), module, version, user, group
-# and the optional keys: bin, url, cfg (list of files), data (idem), services idem), tests 
+# - requires the dictionary 'install' to be defined in role's default with
+#   at least the mandatory keys: type, module, version, user, group
+#   and the optional keys: bin, url, cfg (list of files), data (idem),
+#                          services (idem), checks
 
 - set_fact:
-    tmpbin: /opt/{{ install.dir }}
-  when: install.dir is defined
-        
+    tmpbin: /opt/{{ (install.file | basename | splitext)[0] }}
+  when: install.file is defined
+      
 - set_fact:
     tmpbin: /opt/{{ install.module }}-{{ install.version }}
-  when: install.dir is not defined
+  when: install.file is not defined
 
 # using the merge option of Ansible to extend the install dictionary 
 - name: declare install.paths for {{ install.module }}  

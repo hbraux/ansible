@@ -1,6 +1,6 @@
 - include_tasks: kafka.yml
-  when: global.servers.kafka | length >0
+  when: groups['kafka'] | intersect(play_hosts) | length >0
 
 - include_tasks: elasticsearch.yml
-  when: global.servers.elasticsearch | length >0
+  when: groups['elasticsearch'] | intersect(play_hosts) | length >0
 

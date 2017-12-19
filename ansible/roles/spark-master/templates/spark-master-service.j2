@@ -1,0 +1,16 @@
+[Unit]
+Description=Spark Master Service
+After=network.target
+
+[Service]
+Type=forking
+User={{ install.user }}
+WorkingDirectory={{ install.path.data }}
+Environment=SPARK_CONF_DIR={{ install.path.cfg }} SPARK_LOG_DIR={{ install.path.log }}
+ExecStart={{ install.path.bin }}/sbin/start-master.sh --webui-port {{ install.port }} 
+ExecStop={{ install.path.bin }}/sbin/sbin/stop-master.sh
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,1 @@
+export SITE_ZOOKEEPER={{ groups["zookeeper"] | intersect(play_hosts) | join(":{0},".format( install.port )) }}:{{ install.port }}

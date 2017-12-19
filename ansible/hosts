@@ -40,5 +40,6 @@ kafka1.hostonly.com
 
 [client]
 sandbox1.hostonly.com
+spark1.hostonly.com
 
 

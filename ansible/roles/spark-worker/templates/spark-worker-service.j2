@@ -1,0 +1,17 @@
+[Unit]
+Description=Spark Worker Service
+After=network.target
+
+[Service]
+Type=forking
+User={{ install.user }}
+WorkingDirectory={{ install.path.data }} 
+Environment=SPARK_CONF_DIR={{ install.path.cfg }} SPARK_LOG_DIR={{ install.path.log }}
+ExecStart={{ install.path.bin }}/sbin/start-slave.sh spark://{{ hostvars[inventory_hostname].master }}:7077 --webui-port {{ install.port }} 
+ExecStop={{ install.path.bin }}/sbin/stop-slave.sh
+
+[Install]
+WantedBy=multi-user.target
+
+
+

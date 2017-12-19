@@ -27,9 +27,17 @@ function info {
 }
 
 function usage {
-  echo "Usage: 
-  $0 status
-  $0 [-v] <server type>"; exit
+  echo "Usage: $0 [-<options>] <pattern> | <command> <pattern> 
+
+Supported options:
+  -v[vv] : verbosity
+
+Supported commands:
+ deploy   : deploy server(s). this is the default command
+ shutdown : shutdown server(s)
+ destroy  : destroy server(s)
+ status   : servers satus
+"; exit
 }
 
 function getDomain {
@@ -57,17 +65,22 @@ Host *.$Domain
   fi
 } 
 
-function checkCache {
-  if [[ -n $DEPLOY_CACHE ]]
-  then [[ -d $DEPLOY_CACHE ]] || die "Directory $DEPLOY_CACHE does not exist"
+function checkCacheDir {
+  if [[ -n $DEPLOY_CACHE_DIR ]]
+  then [[ -d $DEPLOY_CACHE_DIR ]] || die "Directory $DEPLOY_CACHE_DIR does not exist"
   else # default dir
-    export DEPLOY_CACHE=$HOME/cache
-    if [ ! -d $DEPLOY_CACHE ]
-    then info "Creating cache directory $DEPLOY_CACHE for downloads"
-	 mkdir $DEPLOY_CACHE
+    export DEPLOY_CACHE_DIR=$HOME/cache.d
+    if [ ! -d $DEPLOY_CACHE_DIR ]
+    then info "Creating cache directory $DEPLOY_CACHE_DIR/ for downloads"
+	 mkdir $DEPLOY_CACHE_DIR ||die
     fi
   fi
 }
+
+function checkSiteDir {
+  [[ -d $HOME/.site.d ]] || mkdir $HOME/.site.d
+}
+  
 
 function uploadVagrantFile {
   info "Creating VagrantFile for server type $ServerType"
@@ -134,6 +147,18 @@ function checkAnsible {
   [[ -d $DEPLOY_ANSIBLE ]] || die "Directory $DEPLOY_ANSIBLE does not exist"
   HostFile=$DEPLOY_ANSIBLE/hosts
   [[ -f $HostFile ]] || die "No file $HostFile"
+  # override Ansible config
+  if [[ ! -f $HOME/.ansible.cfg ]]
+  then info "Creating file $HOME/.ansible.cfg"
+       (cat >$HOME/.ansible.cfg)<<EOF
+[defaults]
+inventory = $HostFile
+remote_user = vagrant
+host_key_checking = False
+retry_files_enabled = False
+hash_behaviour = merge
+EOF
+  fi
   Playbook=$DEPLOY_ANSIBLE/$1.yml
   [[ -f $Playbook ]] || die "No playbook file $Playbook"
 }
@@ -161,8 +186,8 @@ function destroy {
   fi
 }
 
-function status {
-  info "VAGRANT Status"
+function globalStatus {
+  info "Vagrant Status"
   getHostIp
   ssh $HostIp "vagrant global-status"
   info "Connection Status"
@@ -173,21 +198,20 @@ function status {
 # ---------------------------------------------------------------
 
 # analyse command line
-mode=deploy
 verbose=""
-[[ $1 == status ]] && status
-
-if [[ $1 == -S ]]
-then mode=shutdown; shift
+if [[ ${1:0:2} == -v ]]
+then verbose="$1"; shift
 fi
-if [[ $1 == -v ]]
-then verbose="-vvv"; shift
-fi
-if [[ $1 == -D ]]
-then mode=destroy; shift
-fi
-
-[ $# -ne 0 ] || usage
+[ $# -eq 0 ] && usage
+mode=$1
+case $mode in
+  status)   globalStatus;;
+  deploy)   shift;;
+  destroy)  shift;;
+  shutdown) shift;;
+  *)        mode=deploy;;
+esac
+[ $# -eq 0 ] && usage
 pattern=$1
 ServerType=$pattern
 l=$((${#pattern}-1))
@@ -199,7 +223,8 @@ esac
 getDomain
 getHostIp
 checkSshConf
-checkCache
+checkCacheDir
+checkSiteDir
 checkAnsible $mode
 
 ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
@@ -222,5 +247,5 @@ done
 if [[ $mode != destroy ]]
 then
   info "Executing ansible playbook $Playbook"
-  ansible-playbook -b $verbose  $Playbook --limit "$pattern*.$Domain"
+  ansible-playbook $verbose  $Playbook --limit "$pattern*.$Domain"
 fi

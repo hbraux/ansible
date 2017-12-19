@@ -4,7 +4,7 @@
 
 - name: create Elastic indexes
   uri:
-    url: "http://{{ global.servers.elasticsearch[0] }}:{{ global.ports.elasticsearch }}/{{ item }}"
+    url: "http://{{ (groups['elasticsearch'] | intersect(play_hosts))[0] }}:{{ global.ports.elasticsearch }}/{{ item }}"
     method: PUT
     bofy_format: json
     body: "{{ body | to_json }}"

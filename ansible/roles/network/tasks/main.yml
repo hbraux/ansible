@@ -4,6 +4,7 @@
     dest: /etc/hosts
     owner: root
     group: root
+  become: true
 
 - name: disable eth0
   lineinfile:
@@ -11,9 +12,11 @@
     regexp: '^ONBOOT='
     line: 'ONBOOT="no"'
   register: eth0
-
+  become: true
+  
 - name: restart network
   systemd:
     name: network
     state: restarted
   when: eth0.changed
+  become: true

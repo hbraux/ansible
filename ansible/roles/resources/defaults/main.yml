@@ -1,12 +1,12 @@
 resources:
   kafka:
     partitions: 2
-    replication: "{{ global.servers.kafka | length }}"
+    replication: "{{ groups['kafka'] | intersect(play_hosts)  | length -1 }}"
     topics:
       - topic1
   elasticsearch:
     shards: 1
-    replicas: "{{ global.servers.elasticsearch | length -1 }}"
+    replicas: "{{ groups['elasticsearch'] | intersect(play_hosts) | length -1 }}"
     indexes:
       - index1
 

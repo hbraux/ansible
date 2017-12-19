@@ -6,6 +6,7 @@ install:
   user: zookeeper
   group: zookeeper
   port: "{{ global.ports.zookeeper }}"
+  site: site-zookeeper.sh
   cfg:
     - zoo.cfg
   data:

@@ -1,20 +1,15 @@
 global:
   localhost:
-    cache: "{{ lookup('env','DEPLOY_CACHE') }}"
+    cache: "{{ lookup('env','DEPLOY_CACHE_DIR') }}"
     proxy: "{{ lookup('env','PROXY') }}"
+    sitedir: "{{ lookup('env','HOME') + '/site.d' }}"
   mirrors:
     apache: http://apache.crihan.fr/dist
     elastic: http://artifacts.elastic.co/downloads
   ports:
     elasticsearch: 9200
-    zookeeper: 2182
-    kafka: 9097
-    spark_masterui: 8077
-    spark_workerui: 8078
+    zookeeper: 2181
+    kafka: 9096
+    spark_master_ui: 9080
+    spark_worker_ui: 9081
     nifi: 8080
-  servers:
-    elasticsearch: "{{ groups['elasticsearch'] | intersect(play_hosts) }}"
-    zookeeper: "{{ groups['zookeeper'] | intersect(play_hosts) }}"
-    kafka: "{{ groups['kafka'] | intersect(play_hosts) }}"
-    spark_workers: "{{ groups['spark-worker'] | intersect(play_hosts) }}"
-

@@ -1,13 +1,16 @@
 install:
   type: rpm
   module: elasticsearch
+  user: elasticsearch
   version: 5.6.4
   port: "{{ global.ports.elasticsearch }}"
   build: ""
   url: "{{ global.mirrors.elastic }}/elasticsearch"
+  site: site-elasticsearch.sh
   cfg:
     - elasticsearch.yml
   services:
     - elasticsearch
   checks:
     port: yes
+

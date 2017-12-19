@@ -17,18 +17,21 @@
   group:
     name: "{{ install.group }}"
     state: present
-
+  become: true
+  
 - name: create user {{ install.user }}
   user:
     name: "{{ install.user }}"
     group: "{{ install.group }}"
-    
+  become: true
+  
 - name: create data directory {{ install.path.data }}
   file:
     path: "{{ install.path.data }}"
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
+  become: true
   
 - name: create log directory {{ install.path.log }}
   file:
@@ -36,7 +39,8 @@
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
     state: directory
-    
+  become: true
+  
 - name: create config directory {{ install.path.cfg }}
   file:
     path: "{{ install.path.cfg }}"
@@ -44,6 +48,7 @@
     group: "{{ install.group }}"
     state: directory
   when: install.cfg is defined
+  become: true
   
 - name: check if {{ archive }} is in {{ global.localhost.cache }}
   stat:
@@ -66,13 +71,15 @@
     dest: /opt
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
-                          
+  become: true
+  
 - name: create link {{ install.path.opt }} to {{ install.path.bin }}
   file:
     src: "{{ install.path.bin }}"
     dest: "{{ install.path.opt }}"
     state: link
-
+  become: true
+  
 - name: configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
@@ -81,6 +88,7 @@
     group: "{{ install.group }}"
   with_items: "{{ install.cfg }}"
   when: install.cfg is defined
+  become: true
   
 - name: create data files
   template:
@@ -90,16 +98,25 @@
     group: "{{ install.group }}"
   with_items: "{{ install.data }}"
   when: install.data is defined
+  become: true
   
 - name: install systemd scripts
   template:
     src: "{{ item }}-service.j2"
     dest: /etc/systemd/system/{{ item }}.service
   with_items: "{{ install.services }}"
-  when: install.services is defined
-
+  when: install.services is defined 
+  become: true
+  
 - name: start services
   service: name="{{ item }}" state=started enabled=yes
   with_items: "{{ install.services }}"
   when: install.services is defined
-
+  become: true
+  
+- name: create site file for {{ install.module }}
+  template:
+    src: "{{ install.site }}.j2"
+    dest: "{{ global.localhost.sitedir }}/{{ install.site }}"
+  when: install.site is defined
+  delegate_to: localhost

@@ -1,5 +1,3 @@
-# must be run with --become
-
 - hosts: all
   roles:
     - network
@@ -27,11 +25,11 @@
   
 - hosts: spark-master
   roles:
-    - spark
+    - spark-master
 
 - hosts: spark-worker
   roles:
-    - spark
+    - spark-worker
 
 - hosts: nifi
   roles:

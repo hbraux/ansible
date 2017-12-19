@@ -1,0 +1,2 @@
+- include_tasks: "{{ playbook_dir }}/common/install.yml"
+  
