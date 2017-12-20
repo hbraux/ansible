@@ -4,30 +4,28 @@
     # python -c 'import crypt; print crypt.crypt("password", "$1$SomeSalt$")'
     password: $1$SomeSalt$/jbIwfYCu0MxPBND2EtRH.
     groups: users,spark
-
+  become: true
+  
 - name: add local public key
   authorized_key:
     user: "{{ username }}"
     state: present
     key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
-    
+  become: true
+  
 - name: upload site files
   copy:
     src: "{{ global.localhost.sitedir }}"
-    dest: /home/{{ username }}/site.d
-
+    dest: /home/{{ username }}
+    owner: "{{ username }}"
+  become: true
+  
 - name: update bashrc
   template:
     src: bashrc.j2
     dest: "/home/{{ username }}/.bashrc"
     owner: "{{ username }}"
-
-
-- name: update bashrc
-  template:
-    src: bashrc.j2
-    dest: "/home/{{ username }}/.bashrc"
-    owner: "{{ username }}"
+  become: true
 
 - name: allow PasswordAuthentication
   lineinfile:
@@ -36,4 +34,5 @@
     line: 'PasswordAuthentication yes'
   notify:
     - restart sshd
+  become: true
 

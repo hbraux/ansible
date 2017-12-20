@@ -13,7 +13,7 @@ declare Playbook
 declare HostIp
 declare HostFile
 declare Domain
-declare VagrantStatus
+declare VagrantStatus=$HOME/.vagrant
 declare VagrantId
 declare -i VagrantChanged=0
 
@@ -31,12 +31,14 @@ function usage {
 
 Supported options:
   -v[vv] : verbosity
+  -r     : refresh status
 
 Supported commands:
- deploy   : deploy server(s). this is the default command
- shutdown : shutdown server(s)
- destroy  : destroy server(s)
- status   : servers satus
+ deploy  : deploy server(s). this is the default command
+ start   : start server(s)
+ shop    : stop server(s)
+ destroy : destroy server(s)
+ status  : servers status
 "; exit
 }
 
@@ -103,7 +105,6 @@ function uploadVagrantFile {
 }
 
 function checkVagrant {
-  VagrantStatus=$HOME/.vagrant
   [[ -n $DEPLOY_VAGRANT ]] || DEPLOY_VAGRANT="E:/Vagrant"
   sftp $HostIp:/id_rsa.pub id_rsa.tmp 1>/dev/null 2>&1
   if [ $? -ne 0 ]
@@ -129,6 +130,7 @@ function checkVagrant {
 function refreshVagrant {
   info "Collecting Vagrant global status from $VAGRANT_PROVIDER host"
   ssh $HostIp "vagrant global-status" | grep $VAGRANT_PROVIDER >$VagrantStatus
+  cat $VagrantStatus
 }
 
 function getVagrantId {
@@ -169,11 +171,12 @@ function up {
   if [[ -n $VagrantId ]]
   then info "Starting up the VM $serv {$VagrantId}"
        ssh $HostIp "vagrant up $VagrantId" || die
-  else info "Creating the VMs for $ServerType"
+  else info "Creating the VMs for $ServerType using Vagrant"
        ssh $HostIp "cmd /C \"set VAGRANT_CWD=$DEPLOY_VAGRANT\\${ServerType} && vagrant up\"" || die
        refreshVagrant
   fi
 }
+
 
 function destroy {
   serv=${1%%.*}
@@ -187,28 +190,58 @@ function destroy {
 }
 
 function globalStatus {
-  info "Vagrant Status"
-  getHostIp
-  ssh $HostIp "vagrant global-status"
-  info "Connection Status"
-  echo "TODO"
-  exit
+  if [[ $1 -eq 1 ]]
+  then refreshVagrant
+  else [[ -f $VagrantStatus ]] || refreshVagrant
+  fi
+  info "Servers Status"
+  for id in $(cat $VagrantStatus | awk '{print $2}')
+  do server=$id.$Domain
+     ping -c1 $server >/dev/null
+     if [ $? -eq 0 ]
+     then echo -e "$server\tRUNNING"
+     else echo -e "$server\tDOWN"
+     fi
+  done
 }
 
+function start {
+  serv=${1%%.*}
+  getVagrantId $serv
+  if [[ -n $VagrantId ]]
+  then info "Starting $serv with VBoxManage command"
+       ssh $HostIp "\"C:\Program Files\Oracle\VirtualBox\vboxmanage.exe\" startvm $serv --type headless" ||  die
+  else die "$serv is not provisionned"
+  fi
+}
+  
 # ---------------------------------------------------------------
+
+# check the env
+getDomain
+getHostIp
+checkSshConf
+checkCacheDir
+checkSiteDir
 
 # analyse command line
 verbose=""
 if [[ ${1:0:2} == -v ]]
 then verbose="$1"; shift
 fi
+refresh=0
+if [[ ${1} == -r ]]
+then refresh=1; shift
+fi
+
 [ $# -eq 0 ] && usage
 mode=$1
 case $mode in
-  status)   globalStatus;;
+  status)   globalStatus $refresh; exit;;
   deploy)   shift;;
   destroy)  shift;;
-  shutdown) shift;;
+  start)    shift;;
+  stop)     shift;;
   *)        mode=deploy;;
 esac
 [ $# -eq 0 ] && usage
@@ -219,12 +252,6 @@ case "${pattern:$l:1}" in
   [1-9]) ServerType=${pattern:0:$l};;
 esac
 
-# check the env
-getDomain
-getHostIp
-checkSshConf
-checkCacheDir
-checkSiteDir
 checkAnsible $mode
 
 ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
@@ -236,15 +263,25 @@ done
 
 # up the servers
 checkVagrant
+runansible=0
 for server in $ServerList
-do ping -c 1 $server >/dev/null
+do ping -c1 $server >/dev/null
    alive=$?
    case $mode in
-     deploy)  [ $alive -ne 0 ] && up $server;;
+     start)   if [ $alive -ne 0 ]
+	      then start $server
+		   runansible=1
+	      else info "$server is already started"
+	      fi;;
+     deploy)   runansible=1; [ $alive -ne 0 ] && up $server;;
      destroy) destroy $server;;
+     stop)    if [ $alive -eq 0 ]
+	      then runansible=1
+	      else info "$server is already stopped"
+	      fi;;
    esac
 done
-if [[ $mode != destroy ]]
+if [[ $runansible -eq 1 ]]
 then
   info "Executing ansible playbook $Playbook"
   ansible-playbook $verbose  $Playbook --limit "$pattern*.$Domain"

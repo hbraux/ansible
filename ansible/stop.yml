@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: shutdown {{ inventory_hostname }} 
+      command: /sbin/shutdown -h 1
+  become: yes
+
+
+  

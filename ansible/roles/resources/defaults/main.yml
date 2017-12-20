@@ -1,7 +1,7 @@
 resources:
   kafka:
     partitions: 2
-    replication: "{{ groups['kafka'] | intersect(play_hosts)  | length -1 }}"
+    replication: "{{ groups['kafka'] | intersect(play_hosts)  | length  }}"
     topics:
       - topic1
   elasticsearch:
