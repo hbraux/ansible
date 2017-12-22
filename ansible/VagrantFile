@@ -1,4 +1,4 @@
-# Vagrant File for ~ServerType~ servers [~ServerCount~]
+# Vagrant File for ~ServerType~ servers
 Vagrant.configure("2") do |config|
   ssh_pub_key = File.readlines("~VagrantData~/id_rsa.pub").first.strip
   (1..~ServerCount~).each do |i|

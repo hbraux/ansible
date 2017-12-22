@@ -3,6 +3,7 @@ global:
     cache: "{{ lookup('env','DEPLOY_CACHE_DIR') }}"
     proxy: "{{ lookup('env','PROXY') }}"
     sitedir: "{{ lookup('env','HOME') + '/site.d' }}"
+    clientdir: "{{ lookup('env','HOME') + '/client' }}"
   mirrors:
     apache: http://apache.crihan.fr/dist
     elastic: http://artifacts.elastic.co/downloads

@@ -27,7 +27,7 @@ function info {
 }
 
 function usage {
-  echo "Usage: $0 [-<options>] <pattern> | <command> <pattern> 
+  echo "Usage: $0 [-<options>] <pattern>* | <command> <pattern>*
 
 Supported options:
   -v[vv] : verbosity
@@ -171,7 +171,8 @@ function up {
   if [[ -n $VagrantId ]]
   then info "Starting up the VM $serv {$VagrantId}"
        ssh $HostIp "vagrant up $VagrantId" || die
-  else info "Creating the VMs for $ServerType using Vagrant"
+  else checkVagrant
+       info "Creating the VMs for $ServerType using Vagrant"
        ssh $HostIp "cmd /C \"set VAGRANT_CWD=$DEPLOY_VAGRANT\\${ServerType} && vagrant up\"" || die
        refreshVagrant
   fi
@@ -195,12 +196,13 @@ function globalStatus {
   else [[ -f $VagrantStatus ]] || refreshVagrant
   fi
   info "Servers Status"
-  for id in $(cat $VagrantStatus | awk '{print $2}')
-  do server=$id.$Domain
+  for serv in $(cat $VagrantStatus | awk '{print $2}')
+  do getVagrantId $serv
+     server=$serv.$Domain
      ping -c1 $server >/dev/null
      if [ $? -eq 0 ]
-     then echo -e "$server\tRUNNING"
-     else echo -e "$server\tDOWN"
+     then echo -e "$serv {$VagrantId}\tRUNNING"
+     else echo -e "$serv {$VagrantId}\tDOWN"
      fi
   done
 }
@@ -245,7 +247,11 @@ case $mode in
   *)        mode=deploy;;
 esac
 [ $# -eq 0 ] && usage
+# loop on pattern
+while [ $# -gt 0 ]
+do
 pattern=$1
+shift  
 ServerType=$pattern
 l=$((${#pattern}-1))
 case "${pattern:$l:1}" in
@@ -261,8 +267,7 @@ for server in $ServerList
 do ServerCount=$((ServerCount + 1))
 done
 
-# up the servers
-checkVagrant
+
 runansible=0
 for server in $ServerList
 do ping -c1 $server >/dev/null
@@ -286,3 +291,6 @@ then
   info "Executing ansible playbook $Playbook"
   ansible-playbook $verbose  $Playbook --limit "$pattern*.$Domain"
 fi
+
+# end of loop
+done

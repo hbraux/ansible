@@ -1,1 +1,5 @@
-username: client
+client:
+  user: client
+  group: users
+  # python -c 'import crypt; print crypt.crypt("password", "$1$SomeSalt$")'
+  password: $1$SomeSalt$/jbIwfYCu0MxPBND2EtRH.

@@ -1,11 +1,8 @@
----
-
 - hosts: all
   gather_facts: no
   tasks:
     - name: shutdown {{ inventory_hostname }} 
-      command: /sbin/shutdown -h 1
+      shell: nohup bash -c "sleep 1 && /sbin/shutdown now" &
   become: yes
-
 
   
