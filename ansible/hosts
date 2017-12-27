@@ -42,4 +42,7 @@ kafka1.hostonly.com
 sandbox1.hostonly.com
 spark1.hostonly.com
 
+[admin]
+admin.hostonly.com
+
 

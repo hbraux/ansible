@@ -43,6 +43,9 @@
   roles:
     - resources
 
+- hosts: admin
+  roles:
+    - admin
 
 
 

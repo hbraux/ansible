@@ -1,1 +1,2 @@
-export SITE_ES=http://{{ inventory_hostname }}:{{ install.port }}
+export SITE_ESURL=http://{{ inventory_hostname }}:{{ install.port }}
+export SITE_ESNODES={{ groups['elasticsearch'] | intersect(play_hosts) | join(',') }}

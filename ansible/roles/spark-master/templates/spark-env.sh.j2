@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export JAVA_TOOL_OPTS=-Djava.net.preferIPv4Stack=true
-
-SPARK_MASTER_HOST={{ hostvars[inventory_hostname].master }}
-SPARK_LOCAL_IP={{ inventory_hostname }}
+SPARK_CONF_DIR=/etc/spark
+SPARK_LOCAL_IP=127.0.0.1
+SPARK_LOG_DIR=/var/log/saprk
+SPARK_MASTER_WEBUI_PORT={{install.port }}
