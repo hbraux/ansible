@@ -9,6 +9,7 @@ install:
   site: site-spark.sh
   cfg:
     - spark-env.sh
+    - spark-defaults.conf.j2
     - log4j.properties
   services:
     - spark-master

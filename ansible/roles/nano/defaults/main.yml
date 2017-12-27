@@ -1,0 +1,7 @@
+install:
+  type: rpm
+  module: nano
+  version: 2.3.1
+  build: "-10.el7.x86_64"
+  url: "http://mirror.centos.org/centos/7/os/x86_64/Packages/"
+

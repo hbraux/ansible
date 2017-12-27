@@ -6,9 +6,6 @@ install:
   group: spark
   port: "{{ global.ports.spark_worker_ui }}"
   file: spark-1.6.3/spark-1.6.3-bin-hadoop2.6.tgz
-  cfg:
-    - spark-env.sh
-    - spark-defaults.conf
   services:
     - spark-worker
   checks:

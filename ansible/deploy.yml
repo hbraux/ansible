@@ -37,6 +37,7 @@
 
 - hosts: client
   roles:
+    - nano
     - client
 
 - hosts: resources
