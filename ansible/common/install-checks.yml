@@ -1,6 +1,6 @@
 # installation checks
 
-- name: check if port {{ install.port }} is opened
+- name: install / check if port {{ install.port }} is opened
   wait_for:
     port: "{{ install.port }}"
     timeout: 60

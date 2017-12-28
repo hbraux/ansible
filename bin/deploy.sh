@@ -159,6 +159,7 @@ remote_user = vagrant
 host_key_checking = False
 retry_files_enabled = False
 hash_behaviour = merge
+display_skipped_hosts = False
 EOF
   fi
   Playbook=$DEPLOY_ANSIBLE/$1.yml

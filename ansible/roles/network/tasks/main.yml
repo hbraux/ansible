@@ -1,3 +1,10 @@
+- name: disable YUM fastestmirror plugin
+  lineinfile:
+    path: /etc/yum/pluginconf.d/fastestmirror.conf
+    regexp: '^enabled='
+    line: 'enabled=0'
+  become: true
+
 - name: update /etc/hosts from template
   template:
     src: hosts.j2
@@ -12,6 +19,7 @@
     regexp: '^ONBOOT='
     line: 'ONBOOT="no"'
   register: eth0
+  when: inventory_hostname not in groups['admin']
   become: true
   
 - name: restart network

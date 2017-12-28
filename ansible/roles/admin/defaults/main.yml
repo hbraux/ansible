@@ -1,0 +1,13 @@
+admin:
+  user: harold
+  group: users
+  # python -c 'import crypt; print crypt.crypt("some password", "$1$SomeSalt$")'
+  password: $1$SomeSalt$gyNQmXYZBupsB7a/GQzbG0
+  packages:
+    - nano
+    - lynx
+    - curl
+    - git
+    - emacs-nox
+    - ansible
+   

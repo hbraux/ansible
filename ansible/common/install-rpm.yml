@@ -1,39 +1,49 @@
-- name: installation of {{ install.module }}-{{ install.version }}
-  debug:
-    msg: install={{ install }}
-    verbosity: 1
-  
-- set_fact:
+- name: install / installation of {{ install.module }}-{{ install.version }}
+  set_fact:
     archive: "{{ install.module }}-{{ install.version }}{{ install.build }}.rpm"
+    
+- name: install / check if {{ install.module }} is installed
+  yum:
+    list: "{{ install.module }}"
+    disablerepo: '*'
+  register: yum_check
 
-- name: check if {{ archive }} is in {{ global.localhost.cache }}
+- name: install / check if {{ archive }} is in {{ global.localhost.cache }}
   stat:
     path: "{{ global.localhost.cache }}/{{ archive }}"
-  register: f
+  register: path_check
   delegate_to: localhost
+  when: not yum_check.results
 
-- name: download {{ archive }} from {{ install.url }}
+- name: install / download {{ archive }} from {{ install.url }}
   get_url:
     url: "{{ install.url }}/{{ archive }}"
     dest: "{{ global.localhost.cache }}"
   environment:
       http_proxy: "{{ global.localhost.http_proxy }}"
-  when: not f.stat.exists
+  when: not yum_check.results and not path_check.stat.exists
   delegate_to: localhost
 
-- name: upload {{ archive }} to {{ inventory_hostname }} 
+- name: install / upload {{ archive }} to {{ inventory_hostname }} 
   copy:
     src: "{{ global.localhost.cache }}/{{ archive }}"
     dest: "{{ install.path.tmp }}/{{ archive }}"
+  when:  not yum_check.results 
   
-- name: yum install {{ archive }}
+- name: install / yum install {{ archive }}
   yum:
     name: "{{ install.path.tmp }}/{{ archive }}"
     state: present
-  register: is_installed
+  when:  not yum_check.results
   become: true
+
+- name: install / cleanup file
+  file:
+    path: "{{ install.path.tmp }}/{{ archive }}"
+    state: absent
+  when:  not yum_check.results
   
-- name: configure {{ install.module }}
+- name: install / configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
     dest: "{{ install.path.cfg }}/{{ item }}"
@@ -42,13 +52,13 @@
   when: install.cfg is defined
   become: true
 
-- name: start services for {{ install.module }}
+- name: install / start services for {{ install.module }}
   service: name="{{ item }}" state=started enabled=yes
   with_items: "{{ install.services }}"
   when: install.services is defined
   become: true
 
-- name: create site file for {{ install.module }}
+- name: install / create site file for {{ install.module }}
   template:
     src: "{{ install.site }}.j2"
     dest: "{{ global.localhost.sitedir }}/{{ install.site }}"

@@ -3,29 +3,31 @@
     msg: install={{ install }}
     verbosity: 1
     
-- set_fact:
+- name: install / prepare
+  set_fact:
     url: "{{ global.mirrors.apache }}/{{ install.file | dirname }}"
     archive: "{{ install.file | basename }}"
   when: install.file is defined
 
-- set_fact:
+- name: install / prepare
+  set_fact: 
     url: "{{ global.mirrors.apache }}/{{ install.module }}/{{ install.module }}-{{ install.version }}"
     archive: "{{ install.module }}-{{ install.version }}.tar.gz"
   when: install.file is not defined
 
-- name: create group {{ install.group }}
+- name: install / create group {{ install.group }}
   group:
     name: "{{ install.group }}"
     state: present
   become: true
   
-- name: create user {{ install.user }}
+- name: install / create user {{ install.user }}
   user:
     name: "{{ install.user }}"
     group: "{{ install.group }}"
   become: true
   
-- name: create data directory {{ install.path.data }}
+- name: install / create data directory {{ install.path.data }}
   file:
     path: "{{ install.path.data }}"
     owner: "{{ install.user }}"
@@ -33,7 +35,7 @@
     state: directory
   become: true
   
-- name: create log directory {{ install.path.log }}
+- name: install / create log directory {{ install.path.log }}
   file:
     path: "{{ install.path.log }}"
     owner: "{{ install.user }}"
@@ -41,7 +43,7 @@
     state: directory
   become: true
   
-- name: create config directory {{ install.path.cfg }}
+- name: install / create config directory {{ install.path.cfg }}
   file:
     path: "{{ install.path.cfg }}"
     owner: "{{ install.user }}"
@@ -50,22 +52,22 @@
   when: install.cfg is defined
   become: true
   
-- name: check if {{ archive }} is in {{ global.localhost.cache }}
+- name: install / check if {{ archive }} is in {{ global.localhost.cache }}
   stat:
     path: "{{ global.localhost.cache }}/{{ archive }}"
-  register: f
+  register: check_path
   delegate_to: localhost
   
-- name: download {{ archive }} from {{ url }}
+- name: install / download {{ archive }} from {{ url }}
   get_url:
     url: "{{ url }}/{{ archive }}"
     dest: "{{ global.localhost.cache  }}"
   environment:
     http_proxy: "{{ global.localhost.http_proxy }}"
-  when: not f.stat.exists 
+  when: not check_path.stat.exists 
   delegate_to: localhost
 
-- name: unarchive {{ archive }}
+- name: install / unarchive {{ archive }}
   unarchive:
     src: "{{ global.localhost.cache }}/{{ archive }}"
     dest: /opt
@@ -73,14 +75,14 @@
     group: "{{ install.group }}"
   become: true
   
-- name: create link {{ install.path.opt }} to {{ install.path.bin }}
+- name: install / create link {{ install.path.opt }} to {{ install.path.bin }}
   file:
     src: "{{ install.path.bin }}"
     dest: "{{ install.path.opt }}"
     state: link
   become: true
   
-- name: configure {{ install.module }}
+- name: install / configure {{ install.module }}
   template:
     src: "{{ item }}.j2"
     dest: "{{ install.path.cfg }}/{{ item }}"
@@ -90,7 +92,7 @@
   when: install.cfg is defined
   become: true
   
-- name: create data files
+- name: install / create data files
   template:
     src: "{{ item }}.j2"
     dest: "{{ install.path.data }}/{{ item }}"
@@ -100,7 +102,7 @@
   when: install.data is defined
   become: true
   
-- name: install systemd scripts
+- name: install / create systemd scripts
   template:
     src: "{{ item }}-service.j2"
     dest: /etc/systemd/system/{{ item }}.service
@@ -108,13 +110,13 @@
   when: install.services is defined 
   become: true
   
-- name: start services
+- name: install / start services
   service: name="{{ item }}" state=started enabled=yes
   with_items: "{{ install.services }}"
   when: install.services is defined
   become: true
   
-- name: create site file for {{ install.module }}
+- name: install / create site file for {{ install.module }}
   template:
     src: "{{ install.site }}.j2"
     dest: "{{ global.localhost.sitedir }}/{{ install.site }}"

@@ -1,0 +1,60 @@
+- name: update system
+  yum:
+    name: '*'
+    state: latest
+  environment: "{{ global.proxyenv }}"
+  become: true
+
+- name: install packages
+  yum:
+    name: "{{ item }}"
+  with_items: "{{ admin.packages }}"
+  environment: "{{ global.proxyenv }}"  
+  become: true
+
+- name: create user {{ admin.user }}
+  user:
+    name: "{{ admin.user }}"
+    password: "{{ admin.password }}"
+    group:  "{{ admin.group }}"
+  become: true
+
+- name: add local public key
+  authorized_key:
+    user: "{{ admin.user }}"
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+  become: true
+  
+- name: upload env files
+  copy:
+    src: "{{ global.localhost.envdir }}"
+    dest: /home/{{ admin.user }}
+    owner: "{{ admin.user }}"
+    group: "{{ admin.group }}"
+    mode: 0744
+  become: true
+                            
+- name: update bashrc
+  template:
+    src: bashrc.j2
+    dest: /home/{{ admin.user }}/.bashrc
+    owner: "{{ admin.user }}"
+    group: "{{ admin.group }}"
+  become: true
+
+- name: allow PasswordAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication '
+    line: 'PasswordAuthentication yes'
+  notify:
+    - restart sshd
+  become: true
+
+- name: allow sudo for {{ admin.user }}
+  template:
+    src: sudoer.j2
+    dest: /etc/sudoers.d/{{ admin.user }}
+  become: true
+

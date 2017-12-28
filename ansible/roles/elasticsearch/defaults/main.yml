@@ -2,7 +2,7 @@ install:
   type: rpm
   module: elasticsearch
   user: elasticsearch
-  version: 5.6.4
+  version: 2.3.0
   port: "{{ global.ports.elasticsearch }}"
   build: ""
   url: "{{ global.mirrors.elastic }}/elasticsearch"
