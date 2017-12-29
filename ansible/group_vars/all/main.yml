@@ -4,9 +4,10 @@ global:
     sitedir: "{{ lookup('env','HOME') + '/site.d' }}"
     envdir: "{{ lookup('env','HOME') + '/env.d' }}"
     clientdir: "{{ lookup('env','HOME') + '/client' }}"
+    proxy: "{{ lookup('env','PROXY') }}"
   proxyenv:
-    http_proxy: "{{ lookup('env','PROXY') }}"
-    https_proxy: "{{ lookup('env','PROXY') }}"
+    http_proxy: http://{{ lookup('env','PROXY') }}
+    https_proxy: http://{{ lookup('env','PROXY') }}
   mirrors:
     apache: http://apache.crihan.fr/dist
     elastic: http://artifacts.elastic.co/downloads

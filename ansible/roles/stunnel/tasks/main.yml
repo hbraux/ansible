@@ -1,0 +1,33 @@
+- name: install {{ stunnel.module }}
+  yum:
+    name: "{{ stunnel.module }}"
+  with_items: "{{ admin.packages }}"
+  become: true
+
+- name: create user {{ stunnel.user }}
+  user:
+    name: "{{ stunnel.user }}"
+  become: true
+
+- name: check certificate
+  stat:
+    path: "{{ stunnel.certdir }}/stunnel.pem"
+  register: path_check
+
+- name: create certificate
+  shell:  cd {{ stunnel.certdir }} && make stunnel.pem && chmod a+r stunnel.pem
+  when: not path_check.stat.exists
+  become: true
+
+- name: create stunnel.conf
+  template:
+    src: stunnel.conf.j2
+    dest: /etc/stunnel/stunnel.conf
+    owner: "{{ stunnel.user }}"
+  become: true
+
+- name: create systemd script
+  template:
+    src: "stunnel-service.j2"
+    dest: /etc/systemd/system/stunnel.service
+  become: true

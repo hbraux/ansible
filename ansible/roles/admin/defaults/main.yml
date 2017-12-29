@@ -8,6 +8,8 @@ admin:
     - lynx
     - curl
     - git
+    - nc
+    - stunnel
     - emacs-nox
     - ansible
    

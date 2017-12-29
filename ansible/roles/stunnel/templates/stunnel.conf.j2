@@ -1,0 +1,11 @@
+pid = /var/run/stunnel/stunnel.pid
+cert = {{ stunnel.certdir }}/stunnel.pem
+client = yes
+#foreground = yes
+[ssh]
+accept = 127.0.0.1:{{ stunnel.port }}
+protocol = connect
+protocolAuthentication = basic
+protocolHost = {{ stunnel.host }}
+connect = {{ stunnel.proxy }}
+

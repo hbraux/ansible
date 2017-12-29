@@ -1,0 +1,7 @@
+stunnel:
+  module: stunnel
+  user: stunnel
+  host: 164.132.225.18:443
+  port: 8443
+  certdir: /etc/pki/tls/certs
+  proxy: "{{ localhost.proxy }}"

@@ -1,4 +1,45 @@
-- import_tasks: "{{ playbook_dir }}/common/install.yml"
+- name: install / installation of {{ jdk.module }}-{{ jdk.version }}
+  set_fact:
+    archive: "{{ jdk.module }}-{{ jdk.version }}{{ jdk.build }}.rpm"
+    
+- name: install / check if {{ jdk.module }} is installed
+  yum:
+    list: "{{ jdk.module }}"
+    disablerepo: '*'
+  register: yum_check
 
+- name: install / check if {{ archive }} is in {{ global.localhost.cache }}
+  stat:
+    path: "{{ global.localhost.cache }}/{{ archive }}"
+  register: path_check
+  delegate_to: localhost
+  when: not yum_check.results
 
+- name: install / download {{ archive }} from {{ jdk.url }}
+  get_url:
+    url: "{{ jdk.url }}/{{ archive }}"
+    dest: "{{ global.localhost.cache }}"
+  environment:
+      http_proxy: "{{ global.localhost.http_proxy }}"
+  when: not yum_check.results and not path_check.stat.exists
+  delegate_to: localhost
 
+- name: install / upload {{ archive }} to {{ inventory_hostname }} 
+  copy:
+    src: "{{ global.localhost.cache }}/{{ archive }}"
+    dest: /tmp/{{ archive }}
+  when:  not yum_check.results 
+  
+- name: install / yum install {{ archive }}
+  yum:
+    name: /tmp/{{ archive }}
+    state: present
+  when:  not yum_check.results
+  become: true
+
+- name: install / cleanup file
+  file:
+    path: /tmp/{{ archive }}
+    state: absent
+  when:  not yum_check.results
+  

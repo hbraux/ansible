@@ -1,5 +1,4 @@
-install:
-  type: rpm
+jdk:
   module: jdk
   version: 8u152
   build: "-linux-x64"
