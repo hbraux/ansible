@@ -1,8 +1,14 @@
 - hosts: all
   gather_facts: no
   tasks:
-    - name: shutdown {{ inventory_hostname }} 
-      shell: nohup bash -c "sleep 1 && /sbin/shutdown now" &
-  become: yes
-
+    - name: shutdown CentOS server {{ inventory_hostname }} 
+      shell: /sbin/shutdown -f now
+      when: hostvars[inventory_hostname].os is not defined or hostvars[inventory_hostname].os == "centos"
+    - name: poweroff Alpine server {{ inventory_hostname }}
+      raw: poweroff
+      when: hostvars[inventory_hostname].os is defined and hostvars[inventory_hostname].os == "alpine"
+  become: true
   
+
+
+

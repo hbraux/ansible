@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: all:!docker
   roles:
     - network
 
@@ -56,7 +56,10 @@
     - admin
     - stunnel
 
-
+- hosts: docker
+  gather_facts: no
+  roles:
+    - docker
 
 
 

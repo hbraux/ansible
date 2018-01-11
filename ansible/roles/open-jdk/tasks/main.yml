@@ -1,14 +1,61 @@
----
-
-- name: install JDK8 dependencies
+- name: installation of {{ jdk.module }}-{{ jdk.version }}
+  set_fact:
+    archive: "{{ jdk.module }}-{{ jdk.version }}{{ jdk.build }}.rpm"
+    
+- name: check if {{ jdk.module }} is installed
   yum:
-    name: "{{ rpm_repo }}{{ item }}"
-    state: present
+    list: "{{ jdk.module }}"
+    disablerepo: '*'
+  register: yum_check
+
+- name: check if {{ archive }} is in {{ global.localhost.cache }}
+  stat:
+    path: "{{ global.localhost.cache }}/{{ archive }}"
+  register: path_check
+  delegate_to: localhost
+  when: not yum_check.results
+
+
+- name: download {{ archive }} from {{ jdk.url }}
+  get_url:
+    url: "{{ jdk.url }}/{{ archive }}"
+    dest: "{{ global.localhost.cache }}"
+  environment:
+      http_proxy: "{{ global.localhost.http_proxy }}"
+  when: not yum_check.results and not path_check.stat.exists
+  delegate_to: localhost
+
+- name: upload {{ archive }} to {{ inventory_hostname }} 
+  copy:
+    src: "{{ global.localhost.cache }}/{{ archive }}"
+    dest: /tmp/{{ archive }}
+  when:  not yum_check.results 
+  
+- name: upload dependencies to {{ inventory_hostname }} 
+  copy:
+    src: "{{ global.localhost.cache }}/{{ item }}"
+    dest: /tmp/{{ item }}
   with_items: "{{ jdk.deps }}"
+  when:  not yum_check.results   
 
-- name: install JDK8 
+- name: yum install dependencies
   yum:
-    name: "{{ rpm_repo }}{{ jdk_package }}"
+    name: /tmp/{{ item }}
     state: present
+  when:  not yum_check.results
+  with_items: "{{ jdk.deps }}"
+  become: true
 
+- name: yum install {{ archive }}
+  yum:
+    name: /tmp/{{ archive }}
+    state: present
+  when:  not yum_check.results
+  become: true
 
+- name: cleanup file
+  file:
+    path: /tmp/{{ archive }}
+    state: absent
+  when:  not yum_check.results
+  

@@ -1,0 +1,19 @@
+# using raw commands are python is not available on Alpine
+
+- name : apk update
+  raw: http_proxy={{ global.proxyenv.http_proxy }} apk update
+  become: true
+
+- name : install docker
+  raw: http_proxy={{ global.proxyenv.http_proxy }} apk add docker 
+  become: true
+
+- name: register docker services
+  raw: rc-update add docker boot
+  become: true
+
+- name: start docker services
+  raw: service docker start
+  become: true
+
+

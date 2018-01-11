@@ -4,6 +4,7 @@
 VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
+DEFAULT_OS=centos
 
 # variables
 declare ServerType
@@ -48,7 +49,12 @@ function getDomain {
 }
 
 function getHostIp {
-  HostIp=$(netstat -rn  | grep eth0 | grep '255.255.255' | cut -d\  -f1 | sed 's/.0$/.1/')
+  # check if netstat is there
+  which netstat >/dev/null 2>&1
+  if [ $? -eq 0 ]
+  then HostIp=$(netstat -rn  | grep eth0 | grep '255.255.255' | cut -d\  -f1 | sed 's/.0$/.1/')
+  else HostIp=$(ip addr | grep "inet 192." | awk '{ print $4  }' | sed 's/.255$/.1/')
+  fi
   nc -w 1 $HostIp 22 </dev/null >/dev/null || die "port 22 not opened on $VAGRANT_PROVIDER host $HostIp -> start freeSSHd!"
 }
 
@@ -87,18 +93,21 @@ function checkSiteDir {
 function uploadVagrantFile {
   info "Creating VagrantFile for server type $ServerType"
   ServerIP=$(grep $ServerType /etc/hosts | sed 's/[0-9] .*//' |head -1)
-  ServerMemory=$(grep $ServerType $HostFile |grep 'deploy_mem:' | sed 's/.*deploy_mem=//' | cut -d\  -f1)
+  ServerMemory=$(grep $ServerType $HostFile |grep 'mem=' | sed 's/.*mem=//' | awk '{print $1}')
   [[ -n $ServerMemory ]] || ServerMemory=$DEFAULT_MEMORY
-  ServerCpu=$(grep $ServerType $HostFile |grep 'deploy_cpu=' | sed 's/.*deploy_cpu=//' | cut -d\  -f1)
+  ServerCpu=$(grep $ServerType $HostFile |grep 'cpu=' | sed 's/.*cpu=//' | awk '{print $1}')
   [[ -n $ServerCpu ]] || ServerCpu=$DEFAULT_CPU
+  ServerOS=$(grep $ServerType $HostFile |grep 'os=' | sed 's/.*os=//' | awk '{print $1}')
+  [[ -n $ServerOS ]] || ServerOS=$DEFAULT_OS
   cat $DEPLOY_ANSIBLE/VagrantFile | \
-      sed -e "s/~ServerType~/$ServerType/g" \
-	  -e "s/~ServerCount~/$ServerCount/g" \
-	  -e "s/~ServerMemory~/$ServerMemory/g" \
-	  -e "s/~ServerCpu~/$ServerCpu/g" \
-	  -e "s/~Domain~/$Domain/g" \
-	  -e "s|~VagrantData~|$DEPLOY_VAGRANT|g" \
-	  -e "s/~ServerIp~/$ServerIP/g" >VagrantFile || die
+      sed -e "s~@ServerType@~$ServerType~g" \
+	  -e "s~@ServerCount@~$ServerCount~g" \
+	  -e "s~@ServerMemory@~$ServerMemory~g" \
+	  -e "s~@ServerCpu@~$ServerCpu~g" \
+	  -e "s~@ServerOS@~$ServerOS~g" \
+	  -e "s~@Domain@~$Domain~g" \
+	  -e "s~@VagrantData@~$DEPLOY_VAGRANT~g" \
+	  -e "s~@ServerIp@~$ServerIP~g" >VagrantFile || die
   
   info "Uploading VagrantFile to $VAGRANT_PROVIDER host"
   sftp $HostIp:/$ServerType <<<$'put VagrantFile' >/dev/null || die
@@ -159,7 +168,6 @@ remote_user = vagrant
 host_key_checking = False
 retry_files_enabled = False
 hash_behaviour = merge
-display_skipped_hosts = False
 EOF
   fi
   Playbook=$DEPLOY_ANSIBLE/$1.yml
@@ -183,6 +191,7 @@ function up {
 function destroy {
   serv=${1%%.*}
   getVagrantId $serv
+  [[ ${serv:05} == "admin" ]] && die "Cannot destroy an admin server"
   if [[ -n $VagrantId ]]
   then  info "Destroying the VM $serv {$VagrantId}"
 	ssh $HostIp "vagrant destroy -f $VagrantId"

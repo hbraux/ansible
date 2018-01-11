@@ -19,8 +19,7 @@
   get_url:
     url: "{{ install.url }}/{{ archive }}"
     dest: "{{ global.localhost.cache }}"
-  environment:
-      http_proxy: "{{ global.localhost.http_proxy }}"
+  environment:  "{{ global.proxyenv }}"
   when: not yum_check.results and not path_check.stat.exists
   delegate_to: localhost
 

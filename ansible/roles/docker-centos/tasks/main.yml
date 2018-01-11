@@ -1,0 +1,34 @@
+- name: add Docker CE repository
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+  environment: "{{ global.proxyenv }}"
+  become: true
+
+- name : install docker
+  yum:
+    name: docker-ce
+  environment: "{{ global.proxyenv }}"
+  become: true
+
+- name: create directory /etc/systemd/system/docker.service.d
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory  
+  become: true
+
+- name: configure proxy for docker
+  template:
+    src: http-proxy.conf.j2
+    dest: /etc/systemd/system/docker.service.d/http-proxy.conf
+  become: true
+
+- name: configure TCP port
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+  become: true
+
+- name: start docker services
+  service: name=docker state=started enabled=yes
+  become: true

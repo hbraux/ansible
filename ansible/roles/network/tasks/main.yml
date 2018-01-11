@@ -5,12 +5,18 @@
     line: 'enabled=0'
   become: true
 
+- name: check /etc/hosts
+  command: grep hostonly.com /etc/hosts
+  register: check_hosts
+  ignore_errors: true
+
 - name: update /etc/hosts from template
   template:
     src: hosts.j2
     dest: /etc/hosts
     owner: root
     group: root
+  when: check_hosts | failed
   become: true
 
 - name: disable eth0
@@ -19,7 +25,7 @@
     regexp: '^ONBOOT='
     line: 'ONBOOT="no"'
   register: eth0
-  when: inventory_hostname not in groups['admin']
+  when: inventory_hostname not in groups['admin'] and inventory_hostname not in groups['docker']
   become: true
   
 - name: restart network

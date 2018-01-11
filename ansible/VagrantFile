@@ -1,16 +1,17 @@
-# Vagrant File for ~ServerType~ servers
+# Vagrant File for @ServerType@ servers
 Vagrant.configure("2") do |config|
-  ssh_pub_key = File.readlines("~VagrantData~/id_rsa.pub").first.strip
-  (1..~ServerCount~).each do |i|
-    config.vm.define "~ServerType~#{i}" do |node|
-      node.vm.box = "centos/7"
-      node.vm.network :private_network, ip: "~ServerIp~%d" % i
-      node.vm.hostname = "~ServerType~#{i}.~Domain~"
+  ssh_pub_key = File.readlines("@VagrantData@/id_rsa.pub").first.strip
+  (1..@ServerCount@).each do |i|
+    config.vm.define "@ServerType@#{i}" do |node|
+      node.vm.box = "@ServerOS@"
+      node.vm.network :private_network, ip: "@ServerIp@%d" % i
+      node.vm.hostname = "@ServerType@#{i}.@Domain@"
       node.vm.provision 'shell', inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys", privileged: false
+      node.vm.synced_folder ".", "/vagrant", disabled: true
       node.vm.provider "virtualbox" do |vb|
-        vb.name = "~ServerType~#{i}"
-        vb.customize ["modifyvm", :id, "--memory", "~ServerMemory~"]
-        vb.customize ["modifyvm", :id, "--cpus", ~ServerCpu~]
+        vb.name = "@ServerType@#{i}"
+        vb.customize ["modifyvm", :id, "--memory", "@ServerMemory@"]
+        vb.customize ["modifyvm", :id, "--cpus", @ServerCpu@]
         vb.customize ["modifyvm", :id, "--audio", "none"]
       end
     end

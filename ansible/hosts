@@ -1,5 +1,5 @@
 [zookeeper]
-sandbox1.hostonly.com zk_id=1 deploy_cpu=4 deploy_mem=4000
+sandbox1.hostonly.com zk_id=1 cpu=4 mem=4000
 kafka1.hostonly.com zk_id=1
 kafka2.hostonly.com zk_id=2
 kafka3.hostonly.com zk_id=3
@@ -46,6 +46,6 @@ spark1.hostonly.com
 admin1.hostonly.com
 
 [docker]
-docker1.hostonly.com deploy_cpu=4 deploy_mem=4000
+docker1.hostonly.com cpu=2 mem=2048 os=alpine
 
 
