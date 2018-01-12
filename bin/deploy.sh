@@ -4,7 +4,7 @@
 VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
-DEFAULT_OS=centos
+DEFAULT_OS=centos/7
 
 # variables
 declare ServerType
@@ -72,18 +72,6 @@ Host *.$Domain
 " >>$HOME/.ssh/config
   fi
 } 
-
-function checkCacheDir {
-  if [[ -n $DEPLOY_CACHE_DIR ]]
-  then [[ -d $DEPLOY_CACHE_DIR ]] || die "Directory $DEPLOY_CACHE_DIR does not exist"
-  else # default dir
-    export DEPLOY_CACHE_DIR=$HOME/cache.d
-    if [ ! -d $DEPLOY_CACHE_DIR ]
-    then info "Creating cache directory $DEPLOY_CACHE_DIR/ for downloads"
-	 mkdir $DEPLOY_CACHE_DIR ||die
-    fi
-  fi
-}
 
 function checkSiteDir {
   [[ -d $HOME/.site.d ]] || mkdir $HOME/.site.d
@@ -233,7 +221,6 @@ function start {
 getDomain
 getHostIp
 checkSshConf
-checkCacheDir
 checkSiteDir
 
 # analyse command line

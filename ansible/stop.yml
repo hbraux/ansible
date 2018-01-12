@@ -3,10 +3,10 @@
   tasks:
     - name: shutdown CentOS server {{ inventory_hostname }} 
       shell: /sbin/shutdown -f now
-      when: hostvars[inventory_hostname].os is not defined or hostvars[inventory_hostname].os == "centos"
+      when: hostvars[inventory_hostname].os is not defined or hostvars[inventory_hostname].os|dirname == "centos"
     - name: poweroff Alpine server {{ inventory_hostname }}
       raw: poweroff
-      when: hostvars[inventory_hostname].os is defined and hostvars[inventory_hostname].os == "alpine"
+      when: hostvars[inventory_hostname].os is defined and hostvars[inventory_hostname].os|dirname == "alpine"
   become: true
   
 

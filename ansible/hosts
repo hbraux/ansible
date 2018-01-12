@@ -46,6 +46,6 @@ spark1.hostonly.com
 admin1.hostonly.com
 
 [docker]
-docker1.hostonly.com cpu=2 mem=2048 os=alpine
+docker1.hostonly.com cpu=2 mem=2048 os=alpine/3.6
 
 

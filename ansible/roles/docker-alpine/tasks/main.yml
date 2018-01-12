@@ -1,5 +1,14 @@
 # using raw commands are python is not available on Alpine
 
+- name: get proxy IP
+  shell: grep {{ global.proxyhost }} /etc/hosts
+  register: proxy
+  delegate_to: localhost
+
+- name: add proxy to hosts
+  raw: grep 'proxy' /etc/hosts || echo "{{ proxy.stdout }} proxy" >>/etc/hosts
+  become: true
+
 - name : apk update
   raw: http_proxy={{ global.proxyenv.http_proxy }} apk update
   become: true
@@ -8,12 +17,18 @@
   raw: http_proxy={{ global.proxyenv.http_proxy }} apk add docker 
   become: true
 
-- name: register docker services
+- name : configure docker
+  raw: grep 'HTTP_PROXY' /etc/conf.d/docker >/dev/null || echo -e 'DOCKER_OPTS="-H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock"\nexport HTTP_PROXY="{{ global.proxyenv.http_proxy }}"\nexport HTTPS_PROXY="{{ global.proxyenv.http_proxy }}"'>>/etc/conf.d/docker
+  become: true
+
+- name: register docker service
   raw: rc-update add docker boot
   become: true
 
-- name: start docker services
-  raw: service docker start
+- name: disable virtualbox-guest-additions
+  raw: rc-update del virtualbox-guest-additions
   become: true
 
-
+- name: reboot
+  raw:  reboot
+  become: true
