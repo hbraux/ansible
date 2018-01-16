@@ -8,40 +8,14 @@
     disablerepo: '*'
   register: yum_check
 
-- name: install / check if {{ archive }} is in {{ global.localhost.cache }}
-  stat:
-    path: "{{ global.localhost.cache }}/{{ archive }}"
-  register: path_check
-  delegate_to: localhost
-  when: not yum_check.results
-
-- name: install / download {{ archive }} from {{ install.url }}
-  get_url:
-    url: "{{ install.url }}/{{ archive }}"
-    dest: "{{ global.localhost.cache }}"
-  environment:  "{{ global.proxyenv }}"
-  when: not yum_check.results and not path_check.stat.exists
-  delegate_to: localhost
-
-- name: install / upload {{ archive }} to {{ inventory_hostname }} 
-  copy:
-    src: "{{ global.localhost.cache }}/{{ archive }}"
-    dest: "{{ install.path.tmp }}/{{ archive }}"
-  when:  not yum_check.results 
-  
-- name: install / yum install {{ archive }}
+- name: install / yum install {{ archive }} from {{ install.url }}
   yum:
-    name: "{{ install.path.tmp }}/{{ archive }}"
+    name: "{{ install.url }}/{{ archive }}"
     state: present
+  environment:  "{{ global.proxyenv }}"
   when:  not yum_check.results
   become: true
 
-- name: install / cleanup file
-  file:
-    path: "{{ install.path.tmp }}/{{ archive }}"
-    state: absent
-  when:  not yum_check.results
-  
 - name: install / configure {{ install.module }}
   template:
     src: "{{ item }}.j2"

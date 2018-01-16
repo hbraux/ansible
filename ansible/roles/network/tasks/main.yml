@@ -1,14 +1,14 @@
-- name: disable YUM fastestmirror plugin
-  lineinfile:
-    path: /etc/yum/pluginconf.d/fastestmirror.conf
-    regexp: '^enabled='
-    line: 'enabled=0'
-  become: true
+#- name: disable YUM fastestmirror plugin
+#  lineinfile:
+#    path: /etc/yum/pluginconf.d/fastestmirror.conf
+#    regexp: '^enabled='
+#    line: 'enabled=0'
+#  become: true
 
 - name: check /etc/hosts
-  command: grep hostonly.com /etc/hosts
+  shell: grep 'win.hostonly.com' /etc/hosts
   register: check_hosts
-  ignore_errors: true
+  ignore_errors: yes
 
 - name: update /etc/hosts from template
   template:
@@ -33,4 +33,10 @@
     name: network
     state: restarted
   when: eth0.changed
+  become: true
+
+- name: run yum update
+  yum:
+    name: '*'
+  environment:  "{{ global.proxyenv }}"
   become: true

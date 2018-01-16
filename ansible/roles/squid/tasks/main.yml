@@ -8,6 +8,7 @@
     dest: /etc/squid/squid.conf
     content: "cache_peer 10.121.108.7 parent 3128 0 no-query no-digest
 never_direct allow all
-maximum_object_size 200 MB"
+maximum_object_size 200 MB
+offline_mode on"
   become: true
 

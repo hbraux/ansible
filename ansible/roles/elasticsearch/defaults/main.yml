@@ -5,7 +5,7 @@ install:
   version: 2.3.0
   port: "{{ global.ports.elasticsearch }}"
   build: ""
-  url: "{{ global.mirrors.elastic }}/elasticsearch"
+  url: "{{ global.mirrors.elastic }}/elasticsearch/2.3.0"
   site: site-elasticsearch.sh
   cfg:
     - elasticsearch.yml

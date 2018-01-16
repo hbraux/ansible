@@ -51,30 +51,29 @@
     state: directory
   when: install.cfg is defined
   become: true
-  
-- name: install / check if {{ archive }} is in {{ global.localhost.cache }}
+
+
+- name: install / check if {{ archive }} is in /tmp 
   stat:
-    path: "{{ global.localhost.cache }}/{{ archive }}"
+    path: /tmp/{{ archive }}
   register: check_path
-  delegate_to: localhost
   
 - name: install / download {{ archive }} from {{ url }}
   get_url:
     url: "{{ url }}/{{ archive }}"
-    dest: "{{ global.localhost.cache  }}"
-  environment:
-    http_proxy: "{{ global.localhost.http_proxy }}"
+    dest: /tmp
+  environment: "{{ global.proxyenv }}"
   when: not check_path.stat.exists 
-  delegate_to: localhost
-
-- name: install / unarchive {{ archive }}
+  
+- name: install / unarchive {{ archive }} 
   unarchive:
-    src: "{{ global.localhost.cache }}/{{ archive }}"
+    src: /tmp/{{ archive }}
     dest: /opt
     owner: "{{ install.user }}"
     group: "{{ install.group }}"
+    remote_src: yes
   become: true
-  
+
 - name: install / create link {{ install.path.opt }} to {{ install.path.bin }}
   file:
     src: "{{ install.path.bin }}"

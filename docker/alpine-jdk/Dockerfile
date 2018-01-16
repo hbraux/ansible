@@ -1,4 +1,4 @@
-# docker build -t alpine/jdk:3.6 .
+# docker build -t harold/jdk .
 FROM alpine:3.6
 
 ENV LANG C.UTF-8
