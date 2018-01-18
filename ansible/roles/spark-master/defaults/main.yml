@@ -5,7 +5,7 @@ install:
   user: spark
   group: spark
   port: "{{ global.ports.spark_master_ui }}"
-  file: spark-1.6.3/spark-1.6.3-bin-hadoop2.6.tgz
+  file: spark-1.6.3/spark-1.6.3-bin-without-hadoop.tgz
   site: site-spark.sh
   cfg:
     - spark-env.sh

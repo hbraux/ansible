@@ -1,22 +1,26 @@
-#  https://github.com/wurstmeister/kafka-docker
-# docker build -t kafka .
+FROM local/jdk
 
-FROM alpine/jdk:3.6
+ARG PROXY
+ARG MIRROR=apache.crihan.fr
 
-ENV http_proxy http://192.168.56.31:3128
-
-ENV KAFKA_VERSION=0.10.2.1 \
+ENV http_proxy=${PROXY} \ 
+    ZK_VERSION=3.4.10 \
+    ZK_HOME=/opt/zookeeper \
+    KAFKA_VERSION=0.10.2.1 \
     SCALA_VERSION=2.10 \
     KAFKA_HOME=/opt/kafka \
     PATH=${PATH}:${KAFKA_HOME}/bin
 
-RUN set -x && mkdir -p /opt && cd /opt && wget -q http://apache.crihan.fr/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -O tgz \
+RUN mkdir -p /opt && cd /opt && wget -q http://${MIRROR}/dist/zookeeper/zookeeper-${ZK_VERSION}/zookeeper-${ZK_VERSION}.tar.gz -O tgz \
  && tar xfz tgz  \
- && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
+ && ln -s /opt/zookeeper_${ZK_VERSION} ${ZK_HOME} \
  && rm -f tgz
 
-# VOLUME ["/kafka"]
+RUN mkdir -p /opt && cd /opt && wget -q http://${MIRROR}/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -O tgz \
+ && tar xfz tgz  \
+ && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} ${KAFKA_HOME} \
+ && rm -f tgz
 
-# Use "exec" form so that it runs as PID 1 (useful for graceful shutdown)
 # CMD ["start-kafka.sh"]
 
+EXPOSE 2181 9096

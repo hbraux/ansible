@@ -35,14 +35,6 @@
     mode: 0744
   become: true
                             
-- name: update bashrc
-  template:
-    src: bashrc.j2
-    dest: /home/{{ admin.user }}/.bashrc
-    owner: "{{ admin.user }}"
-    group: "{{ admin.group }}"
-  become: true
-
 - name: allow PasswordAuthentication
   lineinfile:
     path: /etc/ssh/sshd_config

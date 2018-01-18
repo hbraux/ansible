@@ -17,3 +17,4 @@ global:
     spark_master_ui: 9080
     spark_worker_ui: 9081
     nifi: 8080
+    cassandra: 7199
