@@ -5,6 +5,7 @@ VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
 DEFAULT_OS=centos/7
+DOCKER_REPO=local
 
 # variables
 declare ServerType
@@ -40,6 +41,8 @@ Supported commands:
  shop    : stop server(s)
  destroy : destroy server(s)
  status  : servers status
+ build   : build a docker image
+ run     : run a docker image
 "; exit
 }
 
@@ -214,6 +217,31 @@ function start {
   else die "$serv is not provisionned"
   fi
 }
+
+function checkDocker {
+  which docker >/dev/null 2>&1 ||die "Docker not installed"
+  [[ -n $DEPLOY_DOCKER ]] || export DEPLOY_DOCKER=$HOME/docker
+  [[ -d $DEPLOY_DOCKER ]] || die "Directory $DEPLOY_DOCKER does not exist"
+  [[ -n $PROXY ]] || PROXY=http://$(grep $PROXY_HOST /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}
+}
+
+function build {
+  [ $# -eq 0 ] && usage
+  img=$1
+  checkDocker
+  id=$(docker images -q $DOCKER_REPO/$img)
+  if [[ -n $id ]]
+  then info "Image $DOCKER_REPO/$img [$id] already built"; return
+  fi
+  [ -d $DEPLOY_DOCKER/$img ] ||die "Directory $DEPLOY_DOCKER/$img does not exist"
+  docker build -t $DOCKER_REPO/$img --build-arg PROXY=$PROXY $DEPLOY_DOCKER/$img
+}
+
+function run {
+  [ $# -eq 0 ] && usage
+  img=$1
+  checkDocker
+}
   
 # ---------------------------------------------------------------
 
@@ -236,6 +264,8 @@ fi
 [ $# -eq 0 ] && usage
 mode=$1
 case $mode in
+  build)    build $2; exit;;
+  run)      run $2; exit;;
   status)   globalStatus $refresh; exit;;
   deploy)   shift;;
   destroy)  shift;;
@@ -244,6 +274,7 @@ case $mode in
   *)        mode=deploy;;
 esac
 [ $# -eq 0 ] && usage
+
 # loop on pattern
 while [ $# -gt 0 ]
 do
