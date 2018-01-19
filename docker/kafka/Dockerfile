@@ -1,10 +1,10 @@
+# simple standalone Zookeeper+ Kafka container
+
 FROM local/jdk
 
-ARG PROXY
 ARG MIRROR=apache.crihan.fr
 
-ENV http_proxy=${PROXY} \ 
-    ZK_VERSION=3.4.10 \
+ENV ZK_VERSION=3.4.10 \
     ZK_HOME=/opt/zookeeper \
     KAFKA_VERSION=0.10.2.1 \
     SCALA_VERSION=2.10 \
@@ -21,6 +21,8 @@ RUN mkdir -p /opt && cd /opt && wget -q http://${MIRROR}/dist/kafka/${KAFKA_VERS
  && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} ${KAFKA_HOME} \
  && rm -f tgz
 
-# CMD ["start-kafka.sh"]
+COPY start-kafka.sh
+
+CMD start-kafka.sh
 
 EXPOSE 2181 9096

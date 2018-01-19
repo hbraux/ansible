@@ -1,5 +1,18 @@
 # using raw commands are python is not available on Alpine
 
+# first prepare the kernel for docker
+- name: disable virtualbox stuff
+  raw: rc-update del virtualbox-guest-additions && rm -f /etc/modules
+  become: true
+
+- name: add swap
+  raw: grep swap /proc/swaps || {  dd if=/dev/zero of=/swap bs=1M count=1024 && chmod 600 /swap && mkswap /swap && rc-update add swap && echo "/swap     none     swap    defaults 0 0">>/etc/fstab && swapon -a  ;}
+  become: true
+
+- name: fix kernel for docker
+  raw: echo -e "net.ipv6.conf.all.disable_ipv6 = 1\nkernel.pax.softmode = 1\nkernel.grsecurity.chroot_deny_chmod = 0" >>/etc/sysctl.d/01-docker.conf
+  become: true
+
 - name: get proxy IP
   shell: grep {{ global.proxyhost }} /etc/hosts
   register: proxy
@@ -23,10 +36,6 @@
 
 - name: register docker service
   raw: rc-update add docker boot
-  become: true
-
-- name: disable virtualbox-guest-additions
-  raw: rc-update del virtualbox-guest-additions
   become: true
 
 - name: reboot

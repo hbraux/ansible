@@ -384,13 +384,14 @@ function build {
   img=$1
   checkDocker
   getGitRepo
+  getProxy
   id=$(docker images -q $DOCKER_REPO/$img)
   if [[ -n $id ]]
   then warn "Image $DOCKER_REPO/$img [$id] already built"; return
   fi
-  dockerdir=$getGitRepo/docker/$img
+  dockerdir=$GitRepo/docker/$img
   [ -d $dockerdir ] ||die "Directory $dockerdir does not exist"
-  docker build -t $DOCKER_REPO/$img --build-arg PROXY=$PROXY $dockerdir
+  docker build -t $DOCKER_REPO/$img --build-arg http_proxy=$Proxy $dockerdir
 }
 
 function run {
