@@ -128,7 +128,6 @@ VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
 DEFAULT_OS=centos/7
-DOCKER_REPO=local
 
 # ------------------------------------------
 # Global variables
@@ -155,21 +154,23 @@ declare -i VagrantChanged=0
 
 function usage {
   echo "
-Usage: $TOOL_NAME.sh [-<options>] <command> <pattern>*
+Usage: $TOOL_NAME.sh <command> [-<flags>] <arguments>*
 
-Supported options:
-  -v   : verbose
-  -r   : refresh status
+Supported flags:
+  -V   : verbose
+  -F   : force
 
 Supported commands:
- env     : setup local env
- deploy  : deploy server(s). this is the default optional command 
- start   : start server(s)
- shop    : stop server(s)
- destroy : destroy server(s)
- status  : servers status
- build   : build a docker image
- run     : run a docker image
+ env               : setup local env
+ status            : servers status
+ deploy  <pattern> : deploy server(s)
+ start   <pattern> : start server(s)
+ srop   <pattern>  : stop server(s)
+ destroy <pattern> : destroy server(s)
+ dock              : docker status
+ build   <image>   : build a docker image
+ run     <image>.. : run a docker image
+ kill    <image>   : stop a docker image/container
 "
   quit
 }
@@ -248,6 +249,7 @@ function setupEnv {
        cp $GitRepo/env/bashrc $HOME/.bashrc 
   fi
   info "Relog if needed"
+  quit
 }
 
 
@@ -279,7 +281,7 @@ function uploadVagrantFile {
   sftp $HostIp:/$ServerType <<<$'put VagrantFile' >/dev/null || die
 }
 
-function checkVagrant {
+function vagrantCheck {
   [[ -n $DEPLOY_VAGRANT ]] || DEPLOY_VAGRANT="E:/Vagrant"
   sftp $HostIp:/id_rsa.pub id_rsa.tmp 1>/dev/null 2>&1
   if [ $? -ne 0 ]
@@ -325,7 +327,7 @@ function up {
   if [[ -n $VagrantId ]]
   then info "Starting up the VM $serv {$VagrantId}"
        ssh $HostIp "vagrant up $VagrantId" || die
-  else checkVagrant
+  else vagrantCheck
        info "Creating the VMs for $ServerType using Vagrant"
        ssh $HostIp "cmd /C \"set VAGRANT_CWD=$DEPLOY_VAGRANT\\${ServerType} && vagrant up\"" || die
        refreshVagrant
@@ -345,9 +347,9 @@ function destroy {
   fi
 }
 
-function globalStatus {
+function infraStatus {
   getDomain
-  opt r && refreshVagrant
+  opt F && refreshVagrant
   [[ -f $VagrantStatus ]] || refreshVagrant
   info "Servers Status"
   for serv in $(cat $VagrantStatus | awk '{print $2}')
@@ -359,9 +361,10 @@ function globalStatus {
      else echo -e "$serv {$VagrantId}\tDOWN"
      fi
   done
+  quit
 }
 
-function start {
+function startServer {
   serv=${1%%.*}
   getVagrantId $serv
   if [[ -n $VagrantId ]]
@@ -375,36 +378,83 @@ function start {
 # docker tools
 # ------------------------------------------
 
-function checkDocker {
+function dockerCheck {
   which docker >/dev/null 2>&1 || die "Docker not installed"
+  [[ -n $DOCKER_HOST ]] || die "DOCKER_HOST not defined"
+  ping -c1 $DOCKER_HOST >/dev/null 2>&1
+  [ $? -eq 0 ] || die "Docker host $DOCKER_HOST not reachable"
 }
 
-function build {
+function dockerBuild {
   [ $# -eq 0 ] && usage
   img=$1
-  checkDocker
+  dockerCheck
   getGitRepo
   getProxy
-  id=$(docker images -q $DOCKER_REPO/$img)
+  id=$(docker images -q $img)
   if [[ -n $id ]]
-  then warn "Image $DOCKER_REPO/$img [$id] already built"; return
+  then warn "Image $img [$id] already built"
+       opt F || quit
+       http_proxy="" docker rmi -f $id
   fi
   dockerdir=$GitRepo/docker/$img
   [ -d $dockerdir ] ||die "Directory $dockerdir does not exist"
-  docker build -t $DOCKER_REPO/$img --build-arg http_proxy=$Proxy $dockerdir
+  info "\$ docker build -t $img $dockerdir"
+  http_proxy="" docker build -t $img --build-arg http_proxy=$Proxy $dockerdir
+  quit
 }
 
-function run {
+function dockerRun {
   [ $# -eq 0 ] && usage
   img=$1
+  shift
+  dockerCheck
+  getGitRepo
+  dockerdir=$GitRepo/docker/$img
+  [ -d $dockerdir ] ||die "Directory $dockerdir does not exist"
+  runfile=$GitRepo/docker/RUN
+  if [ $# -eq 0 ]
+  then id=$(http_proxy="" docker ps | grep "$img\$" | awk '{print $1}')
+       if [[ -n $id ]]
+       then warn "Container $img [$id] already running"; quit
+       fi
+       runopts="--name=$img -d"
+       [ -f $runfile ] && runopts="$runopts $(head -1 $runfile)"
+  else  runopts="--rm"
+  fi
+  info "\$ docker run $runopts $img $*"
+  http_proxy="" docker run $runopts $img $*
+  quit
 }
 
+function dockerKill {
+  [ $# -eq 0 ] && usage
+  img=$1
+  shift
+  dockerCheck
+  id=$(http_proxy="" docker ps | grep "$img\$" | awk '{print $1}')
+  if [[ -z $id ]]
+  then warn "Container $img not running running"
+  else info "\$ docker stop $id"
+       http_proxy="" docker stop $id && docker rm $id
+  fi
+  quit
+}
+
+function dockerStatus {
+  dockerCheck
+  info "Docker images"
+  http_proxy="" docker images
+  info "Docker containers"
+  http_proxy="" docker ps -a
+  quit
+}
 
 # ------------------------------------------
 # Ansible tools
 # ------------------------------------------
 
-function checkAnsible {
+function ansibleCheck {
   which ansible-playbook >/dev/null 2>&1 ||die "Ansible not installed"
   getGitRepo
   HostFile=$GitRepo/ansible/hosts
@@ -426,7 +476,7 @@ EOF
 }
 
 
-function runAnsible {
+function ansibleRun {
   getDomain
   getHostIp
   checkSshConf
@@ -443,7 +493,7 @@ function runAnsible {
       [1-9]) ServerType=${pattern:0:$l};;
     esac
 
-    checkAnsible $Command
+    ansibleCheck $Command
 
     ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
     [[ -n $ServerList ]] || die "Cannot find any server matching $pattern"
@@ -458,7 +508,7 @@ function runAnsible {
       alive=$?
       case $Command in
 	start)   if [ $alive -ne 0 ]
-	  then start $server
+	  then startServer $server
 	  runansible=1
 	  else warn "$server is already started"
 	  fi;;
@@ -472,7 +522,7 @@ function runAnsible {
     done
     if [[ $runansible -eq 1 ]]
     then
-      info "Executing ansible playbook $Playbook"
+      info "\$ ansible-playbook $Playbook --limit $pattern*.$Domain"
       ansible-playbook $Playbook --limit "$pattern*.$Domain"
     fi
     
@@ -485,27 +535,29 @@ function runAnsible {
 # ------------------------------------------
 
 about
-
-while read_opts -r $1
-do shift ;done
-
-[ $# -eq 0 ] && usage
 # load config file if any
 load_cfg
 
+
 [ $# -eq 0 ] && usage
 Command=$1
+shift
+# read opts
+while read_opts -FV $1
+do shift ;done
+
 case $Command in
-  env)      setupEnv; exit;;
-  build)    build $2; exit;;
-  run)      run $2; exit;;
-  status)   globalStatus; exit;;
-  deploy)   shift;;
-  destroy)  shift;;
-  start)    shift;;
-  stop)     shift;;
-  *)        Command=deploy;; # if no command is provided, assuming deploy
+  env)      setupEnv;;
+  build)    dockerBuild $1;;
+  run)      dockerRun $*;;
+  kill)     dockerKill $*;;
+  dock)     dockerStatus;;
+  status)   infraStatus;;
+  start) ;;
+  stop) ;;
+  deploy) ;;
+  destroy) ;;
+  *) dockerRun $Command $*;;
 esac
 [ $# -eq 0 ] && usage
-
-runAnsible $*
+ansibleRun $*

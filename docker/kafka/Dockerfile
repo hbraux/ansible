@@ -1,28 +1,35 @@
-# simple standalone Zookeeper+ Kafka container
+# see https://github.com/wurstmeister/kafka-docker for state-of-the-art 
 
-FROM local/jdk
+FROM jdk
 
+# using local Apache mirror
 ARG MIRROR=apache.crihan.fr
 
-ENV ZK_VERSION=3.4.10 \
-    ZK_HOME=/opt/zookeeper \
-    KAFKA_VERSION=0.10.2.1 \
-    SCALA_VERSION=2.10 \
-    KAFKA_HOME=/opt/kafka \
-    PATH=${PATH}:${KAFKA_HOME}/bin
+ENV ABOUT standalone Kafka/Zookeeper container
+ENV KAFKA_VERSION 0.10.2.1 
+ENV SCALA_VERSION 2.10 
 
-RUN mkdir -p /opt && cd /opt && wget -q http://${MIRROR}/dist/zookeeper/zookeeper-${ZK_VERSION}/zookeeper-${ZK_VERSION}.tar.gz -O tgz \
- && tar xfz tgz  \
- && ln -s /opt/zookeeper_${ZK_VERSION} ${ZK_HOME} \
- && rm -f tgz
+# install wget as the one in Alpine's busybox does not work, as well as bash
+RUN apk add --no-cache wget bash
 
-RUN mkdir -p /opt && cd /opt && wget -q http://${MIRROR}/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -O tgz \
- && tar xfz tgz  \
- && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} ${KAFKA_HOME} \
- && rm -f tgz
+RUN set -x && mkdir -p /opt   \
+    && wget -qO- http://${MIRROR}/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz | tar xzf - -C /opt \
+    && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
+    && adduser -DH -s /sbin/nologin kafka \
+    && chown -R kafka: /opt/kafka
 
-COPY start-kafka.sh
 
-CMD start-kafka.sh
 
-EXPOSE 2181 9096
+COPY entrypoint.sh /
+
+ENV PATH ${PATH}:/opt/kafka/bin
+WORKDIR /opt/kafka
+
+USER kafka
+
+EXPOSE 2181 9092
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["kafka-server-start.sh", "config/server.properties"]
+
+
