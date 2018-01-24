@@ -3,11 +3,10 @@
 if [[ $1 == about ]]
 then [[ -n $ABOUT ]] && echo $ABOUT
 echo "
-Supported container commands
- kafka-server-start.sh (default)
- kafka-topics.sh --zookeeper kafka:2181 ...
- kafka-console-producer.sh --broker-list kafka:9092 --topic ...
- kafka-console-consumer.sh --broker-list kafka:9092 --topic ...
+Commands supported in interactive mode (samples)
+ kafka-topics.sh --zookeeper kafka:2181 --create --topic test --partitions 1 --replication-factor 1
+ kafka-console-producer.sh --broker-list kafka:9092 --topic test 
+ kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
 "
   exit
 fi

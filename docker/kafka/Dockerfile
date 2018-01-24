@@ -1,11 +1,11 @@
-# see https://github.com/wurstmeister/kafka-docker for state-of-the-art 
+# see https://hub.docker.com/r/wurstmeister/kafka/ for state-of-the-art 
 
 FROM jdk
 
 # using local Apache mirror
 ARG MIRROR=apache.crihan.fr
 
-ENV ABOUT standalone Kafka/Zookeeper container
+ENV ABOUT standalone Kafka/Zookeeper service
 ENV KAFKA_VERSION 0.10.2.1 
 ENV SCALA_VERSION 2.10 
 
