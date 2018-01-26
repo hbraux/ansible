@@ -1,0 +1,19 @@
+# https://github.com/abessifi/ansible-oracledb
+
+- name: Configure Linux to host Oracle Database
+  include_tasks: preinstall.yml
+  become: true
+  when: ansible_selinux is defined and ansible_selinux.status == 'enabled'
+
+- name: Installs the Oracle Database
+  include_tasks: install.yml
+  become: true
+  become_user: "{{ oracle_system_user }}"
+
+- name: Remove installation directory
+  file:
+    path: "{{ oracle_installation_dir }}"
+    state: absent
+  become: true
+
+

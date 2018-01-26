@@ -1,0 +1,5 @@
+- name: start disable-thp
+  service: name=disable-thp state=started enabled=yes
+
+- name: restart disable-thp
+  service: name=disable-thp state=restarted enabled=yes

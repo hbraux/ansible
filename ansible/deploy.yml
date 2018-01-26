@@ -56,15 +56,10 @@
     - admin
     - stunnel
 
+- hosts: oracle
+  roles:
+    - oracle-db
+
 - hosts: docker
-  gather_facts: no
   roles:
     - docker
-
-
-- hosts: cassandra
-  roles:
-    - jdk
-    - cassandra
-
-  

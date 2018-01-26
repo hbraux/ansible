@@ -1,0 +1,96 @@
+---
+
+- name: Create folder for installation files
+  file: path={{ oracle_installation_dir }} state=directory
+
+- name: Copy installer files
+  copy: src="{{ oracle_archives_directory }}/{{ item }}" dest="{{ oracle_installation_dir }}/"
+  with_items: "{{ oracle_archives_files }}"
+
+- name: Check if the installer is unarchived
+  stat: path="{{ oracle_installation_dir }}/database"
+  register: installer_dir
+
+- name: Extract installation files
+  unarchive:
+    copy: no
+    src: "{{ oracle_installation_dir }}/{{ item }}"
+    dest: "{{ oracle_installation_dir }}"
+  with_items: "{{ oracle_archives_files }}"
+  when: not installer_dir.stat.exists
+
+- name: Check if the database is installed
+  stat: path="{{ oracle_home_dir }}"
+  register: db_home_dir
+
+- name: Gerenerate the response file for software only installation
+  template: src=db_install.rsp.j2 dest="{{ oracle_installation_dir }}/db_install.rsp"
+
+- name: Install Oracle Database Server
+  shell: "{{ oracle_installation_dir }}/database/runInstaller -silent -ignorePrereq -ignoreSysPrereqs -waitforcompletion -responseFile {{ oracle_installation_dir }}/db_install.rsp"
+  when: not db_home_dir.stat.exists
+
+- name: Execute Inventory root command
+  shell: "{{ oracle_install.inventory_location }}/orainstRoot.sh"
+  become_user: root
+
+- name: Execute DB home root command
+  shell: "{{ oracle_home_dir }}/root.sh"
+  become_user: root
+
+- name: Copy listener and dbca response files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: 'netca.rsp.j2', dest: "{{ oracle_installation_dir }}/netca.rsp" }
+    - { src: 'dbca.rsp.j2', dest: "{{ oracle_installation_dir }}/dbca.rsp" }
+
+- name: Check if the listener is configured already
+  stat: path="{{ oracle_home_dir }}/network/admin/listener.ora"
+  register: listener_config_file
+
+- name: Create db listener using netca
+  shell: "{{ oracle_home_dir }}/bin/netca -silent -responseFile {{ oracle_installation_dir }}/netca.rsp"
+  when: not listener_config_file.stat.exists
+
+- name: Check if the data location dir exists already
+  stat: path="{{ oracle_install.data_location }}"
+  register: data_location_dir
+
+- name: Create database using dbca (takes time)
+  shell: "{{ oracle_home_dir }}/bin/dbca -silent -responseFile {{ oracle_installation_dir }}/dbca.rsp"
+  when: not data_location_dir.stat.exists
+
+- name: Create oracle ORACLE_HOME/ORACLE_SID/PATH environment variables
+  lineinfile:
+    dest: "/home/{{ oracle_system_user }}/.bashrc"
+    line: "{{ item }}"
+  with_items:
+    - "export ORACLE_HOME={{ oracle_home_dir }}"
+    - "export ORACLE_SID={{ oracle_install.db_sid }}"
+    - "export PATH=$PATH:$ORACLE_HOME/bin"
+
+- name: Check if /etc/oratab is up to date
+  shell: "grep -c '^{{ oracle_install.db_sid }}:{{ oracle_home_dir }}:N' /etc/oratab"
+  register: search_oratab_entry
+  ignore_errors: true
+
+- name: Change/Update oratab file
+  lineinfile:
+    dest: '/etc/oratab'
+    regexp: "^#?{{ oracle_install.db_sid }}:{{ oracle_home_dir }}:N"
+    line: "{{ oracle_install.db_sid }}:{{ oracle_home_dir }}:Y"
+  become_user: root
+  when: search_oratab_entry.stdout != '0'
+
+- name: Copy oracle initscript to /etc/init.d/
+  template:
+    src: 'oradb.j2'
+    dest: '/etc/init.d/oradb'
+    mode: 750
+  become_user: root
+
+- name: Enable oradb script to run at startup
+  shell: 'chkconfig --add oradb'
+  become_user: root

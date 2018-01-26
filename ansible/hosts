@@ -45,9 +45,13 @@ spark1.hostonly.com
 [admin]
 admin1.hostonly.com
 
+[oracle]
+oracle1.hostonly.com cpu=2 mem=2048
+
 [docker]
 docker1.hostonly.com cpu=2 mem=2048 os=alpine/3.6
 
 [cassandra]
 cassandra1.hostonly.com
+
 

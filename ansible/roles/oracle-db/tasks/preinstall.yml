@@ -1,0 +1,64 @@
+
+- name: Install required packages
+  yum:
+    name: "{{ item }}" 
+  with_items: "{{ centos.packages_depends }}"
+  environment:  "{{ global.proxyenv }}"
+
+# Create users and groups
+- name: Create oracle group
+  group:
+    name: "{{ oracle_system_group }}"
+    
+- name: Add oracle extra groups
+  group:
+    name: "{{ item }}"
+  with_items: "{{ oracle_extra_groups }}"
+
+- name: Create oracle user
+  user:
+    name: "{{ oracle_system_user }}"
+    group: "{{ oracle_system_group }}"
+    password: "{{ oracle_system_user_password }}"
+
+- name: Create Oracle Base directory
+  file:
+    state: directory
+    path: "{{ oracle_base_dir }}"
+    owner: "{{ oracle_system_user }}"
+    group: "{{ oracle_system_group }}"
+
+- name: Add oracle extra groups
+  user:
+    name: "{{ oracle_system_user }}"
+    groups: "{{ item }}"
+    append: yes
+  with_items:  "{{ oracle_extra_groups }}"
+
+- name: Add oracle user limits
+  lineinfile:
+    dest: /etc/security/limits.conf
+    line: "{{ oracle_system_user }} {{ item.limit }} {{ item.type}} {{ item.value }}"
+  with_items: "{{ sys_config.limits }}"
+
+- name:  create systemd script to disable THP (transparent hugepages)
+  template:
+    src: disable-thp.service.j2
+    dest: /etc/systemd/system/disable-thp.service
+
+- name: install / start services
+  service: name=disable-thp state=started enabled=yes
+
+- name: Configure kernel for hugepages
+  sysctl:
+    name: vm.nr_hugepages
+    value: "{{ sys_config.hugepages_nr }}"
+
+- name: Disable SELinux
+  selinux:
+    state: disabled
+
+- name: reboot
+  shell: shutdown -r now
+
+
