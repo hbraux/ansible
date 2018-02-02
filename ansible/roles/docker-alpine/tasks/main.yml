@@ -10,7 +10,7 @@
   become: true
 
 - name: fix kernel for docker
-  raw: echo -e "net.ipv6.conf.all.disable_ipv6 = 1\nkernel.pax.softmode = 1\nkernel.grsecurity.chroot_deny_chmod = 0" >>/etc/sysctl.d/01-docker.conf
+  raw: echo -e "net.ipv6.conf.all.disable_ipv6 = 1\nkernel.pax.softmode = 1\nkernel.grsecurity.chroot_deny_chmod = 0\nvm.max_map_count=262144" >>/etc/sysctl.d/01-docker.conf
   become: true
 
 - name: get proxy IP

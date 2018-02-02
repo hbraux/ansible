@@ -1,0 +1,2 @@
+-d --mount source=kafka-logs,target=/kafka
+

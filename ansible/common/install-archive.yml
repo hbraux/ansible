@@ -24,6 +24,7 @@
 - name: install / create user {{ install.user }}
   user:
     name: "{{ install.user }}"
+    password: "{{ install.user | password_hash('sha512') }}"
     group: "{{ install.group }}"
   become: true
   

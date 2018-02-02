@@ -128,6 +128,7 @@ VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
 DEFAULT_OS=centos/7
+DOCKER_NETWORK=udn  # user defined network to use DNS
 
 # ------------------------------------------
 # Global variables
@@ -146,7 +147,7 @@ declare Domain
 declare VagrantStatus=$HOME/.vagrant
 declare VagrantId
 declare -i VagrantChanged=0
-
+declare DockerDir
 
 # ------------------------------------------
 # usage
@@ -162,15 +163,18 @@ Supported flags:
 
 Supported commands:
  env               : setup local env
+
  status            : servers status
  deploy  <pattern> : deploy server(s)
- start   <pattern> : start server(s)
- srop   <pattern>  : stop server(s)
  destroy <pattern> : destroy server(s)
- dock              : docker status
+ start   <pattern> : start server(s)
+ stop    <pattern> : stop server(s)
+
+ dock              : docker status (images, containers,.)
  build   <image>   : build a docker image
  run     <image>.. : run a docker image
- kill    <image>   : stop a docker image/container
+ kill    <image>   : stop a docker image
+ rm      <image>   : stop and remove a docker container
 "
   quit
 }
@@ -378,52 +382,71 @@ function startServer {
 # docker tools
 # ------------------------------------------
 
+# small helper to ignore proxy and display the docker command being run
+function _docker {
+  info "\$ docker $*"
+  http_proxy="" docker $* 
+}
+
 function dockerCheck {
   which docker >/dev/null 2>&1 || die "Docker not installed"
   [[ -n $DOCKER_HOST ]] || die "DOCKER_HOST not defined"
   ping -c1 $DOCKER_HOST >/dev/null 2>&1
   [ $? -eq 0 ] || die "Docker host $DOCKER_HOST not reachable"
+  _docker network ls | grep -q $DOCKER_NETWORK 
+  [ $? -eq 0 ] || _docker network create --driver bridge $DOCKER_NETWORK || die
+
+}
+
+function getDockerDir {
+  [ $# -eq 0 ] && usage
+  dockerCheck
+  getGitRepo
+  Dockerdir=$GitRepo/docker/$1
+  [ -d $Dockerdir ] || die "Command '$Command' not supported; and no docker repository named '$1'"
 }
 
 function dockerBuild {
-  [ $# -eq 0 ] && usage
   img=$1
-  dockerCheck
-  getGitRepo
+  getDockerDir $img
   getProxy
-  id=$(docker images -q $img)
+  id=$(http_proxy="" docker images -q $img)
   if [[ -n $id ]]
   then warn "Image $img [$id] already built"
        opt F || quit
-       http_proxy="" docker rmi -f $id
+       _docker rmi -f $id
   fi
   dockerdir=$GitRepo/docker/$img
   [ -d $dockerdir ] ||die "Directory $dockerdir does not exist"
-  info "\$ docker build -t $img $dockerdir"
-  http_proxy="" docker build -t $img --build-arg http_proxy=$Proxy $dockerdir
+  _docker build -t $img --build-arg http_proxy=$Proxy $dockerdir 
   quit
 }
 
+  
+
 function dockerRun {
-  [ $# -eq 0 ] && usage
   img=$1
+  getDockerDir $img
   shift
-  dockerCheck
-  getGitRepo
-  dockerdir=$GitRepo/docker/$img
-  [ -d $dockerdir ] ||die "Directory $dockerdir does not exist"
-  runfile=$GitRepo/docker/RUN
+  runfile=$Dockerdir/RUN
   if [ $# -eq 0 ]
-  then id=$(http_proxy="" docker ps | grep "$img\$" | awk '{print $1}')
+  then id=$(http_proxy="" docker ps -a | grep "$img\$" | awk '{print $1}')
        if [[ -n $id ]]
-       then warn "Container $img [$id] already running"; quit
+       then _docker ps | grep -q "$img\$"
+	    if [ $? -eq 0 ]
+	    then warn "Container $img [$id] already running"
+	    else _docker start $id
+            fi
+	    quit
        fi
-       runopts="--name=$img -d"
-       [ -f $runfile ] && runopts="$runopts $(head -1 $runfile)"
-  else  runopts="--rm"
+       runopts="--name=$img --network=$DOCKER_NETWORK"
+       if [ -f $runfile ]
+       then runopts="$runopts $(head -1 $runfile)"
+       fi
+  else  runopts="-i --rm --network=$DOCKER_NETWORK"
   fi
-  info "\$ docker run $runopts $img $*"
-  http_proxy="" docker run $runopts $img $*
+  opt V && export runopts="$runopts -e VERBOSE=1"
+  _docker run $runopts $img $*
   quit
 }
 
@@ -431,22 +454,37 @@ function dockerKill {
   [ $# -eq 0 ] && usage
   img=$1
   shift
-  dockerCheck
-  id=$(http_proxy="" docker ps | grep "$img\$" | awk '{print $1}')
+  id=$(http_proxy="" docker ps  | grep "$img\$" | awk '{print $1}')
   if [[ -z $id ]]
-  then warn "Container $img not running running"
-  else info "\$ docker stop $id"
-       http_proxy="" docker stop $id && docker rm $id
+  then warn "Container $img not running"
+  else _docker stop $id
+  fi
+  quit
+}
+
+
+function dockerRm {
+  [ $# -eq 0 ] && usage
+  img=$1
+  shift
+  id=$(http_proxy="" docker ps -a | grep "$img\$" | awk '{print $1}')
+  if [[ -z $id ]] 
+  then warn "Container $img not found"
+  else _docker ps  | grep -q "$img\$"
+       if [ $? -eq 0 ]
+       then _docker stop $id
+	    sleep 2 
+       fi
+       _docker rm $id
   fi
   quit
 }
 
 function dockerStatus {
   dockerCheck
-  info "Docker images"
-  http_proxy="" docker images
-  info "Docker containers"
-  http_proxy="" docker ps -a
+  _docker images
+  _docker ps -a
+  _docker volume ls
   quit
 }
 
@@ -494,7 +532,6 @@ function ansibleRun {
     esac
 
     ansibleCheck $Command
-
     ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
     [[ -n $ServerList ]] || die "Cannot find any server matching $pattern"
     
@@ -550,8 +587,9 @@ case $Command in
   env)      setupEnv;;
   build)    dockerBuild $1;;
   run)      dockerRun $*;;
-  kill)     dockerKill $*;;
+  rm)       dockerRm $*;;
   dock)     dockerStatus;;
+  kill)     dockerKill $*;;
   status)   infraStatus;;
   start) ;;
   stop) ;;

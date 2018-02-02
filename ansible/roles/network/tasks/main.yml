@@ -3,6 +3,21 @@
   register: check_hosts
   ignore_errors: yes
 
+- name: enable PasswordAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication yes'
+  become: true
+  register: sshdconf
+  
+- name: restart ssh
+  systemd:
+    name: sshd
+    state: restarted
+  when: sshdconf.changed
+  become: true
+
 - name: disable eth0
   lineinfile:
     path: /etc/sysconfig/network-scripts/ifcfg-eth0
@@ -26,13 +41,6 @@
     line: 'enabled=0'
   become: true
 
-- name: run yum update
-  yum:
-    name: '*'
-  environment:  "{{ global.proxyenv }}"
-  when: check_hosts | failed
-  become: true
-
 - name: update /etc/hosts from template
   template:
     src: hosts.j2
@@ -41,3 +49,11 @@
     group: root
   when: check_hosts | failed
   become: true
+
+- name: run yum update
+  yum:
+    name: '*'
+  environment:  "{{ global.proxyenv }}"
+  when: check_hosts | failed
+  become: true
+

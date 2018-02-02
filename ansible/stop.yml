@@ -2,7 +2,7 @@
   gather_facts: no
   tasks:
     - name: shutdown CentOS server {{ inventory_hostname }} 
-      shell: shutdown -h now
+      shell: /sbin/shutdown -h now
       when: hostvars[inventory_hostname].os is not defined or hostvars[inventory_hostname].os|dirname == "centos"
     - name: poweroff Alpine server {{ inventory_hostname }}
       raw: poweroff

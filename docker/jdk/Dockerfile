@@ -1,6 +1,6 @@
-# Basic Alpine/JDK8 container
+# Basic Alpine/JDK8 container 
 
-FROM alpine:3.6
+FROM bash
 
 ENV LANG=C.UTF-8
 ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
