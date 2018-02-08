@@ -5,7 +5,9 @@ ENV ELASTICSEARCH_VERSION=5.6.6
 ENV ELASTICSEARCH_TARBALL http://164.132.225.18/~harold/elasticsearch-5.6.6.tar.gz 
 #ENV ELASTICSEARCH_TARBALL http://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
 
-ENV HELP_ABOUT Elasticsearch ${ELASTICSEARCH_VERSION} service
+
+ENV CONTAINER_HELP Elasticsearch ${ELASTICSEARCH_VERSION} development server 
+ENV CONTAINER_NAME elastic
 
 RUN set -x && mkdir -p /opt \
     && curl -s ${ELASTICSEARCH_TARBALL} | tar xzf - -C /opt \ 

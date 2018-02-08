@@ -1,12 +1,13 @@
 #!/bin/bash
 
 if [[ $1 == --help ]]
-then [[ -n $HELP_ABOUT ]] && echo $HELP_ABOUT
+then [[ -n $CONTAINER_HELP ]] && echo $CONTAINER_HELP
 echo "
-Commands supported in interactive mode (samples)
- kafka-topics.sh --zookeeper kafka:2181 --create --topic test --partitions 1 --replication-factor 1
- kafka-console-producer.sh --broker-list kafka:9092 --topic test 
- kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
+Commands supported in interactive mode (examples)
+ kafka-topics.sh --zookeeper $CONTAINER_NAME:2181 --create --topic topic.test --partitions 1 --replication-factor 1
+ kafka-console-producer.sh --broker-list $CONTAINER_NAME:9092 --topic topic.test
+ kafka-console-consumer.sh --bootstrap-server $CONTAINER_NAME:9092 --topic topic.test --from-beginning
+ kafka-json.sh $CONTAINER_NAME:9092 topic.test uuid:%uuid date=%now val=%rands
 "
   exit
 fi

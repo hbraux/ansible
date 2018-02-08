@@ -1,10 +1,10 @@
 #!/bin/bash
 
 if [[ $1 == --help ]]
-then [[ -n $HELP_ABOUT ]] && echo $HELP_ABOUT
+then [[ -n $CONTAINER_HELP ]] && echo $CONTAINER_HELP
 echo "
 Commands supported in interactive mode (samples)
-  curl -s http://elastic:9200 # can be run from any container on the User Defined Network
+  curl -s http://$CONTAINER_NAME:9200 # can be run from any container on the User Defined Network
 "
   exit
 fi

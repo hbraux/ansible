@@ -1,5 +1,1 @@
 -d -p 9200:9200 --mount source=elastic-indexes,target=/opt/elasticsearch/data
-
-
-
-
