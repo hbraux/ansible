@@ -171,6 +171,7 @@ Supported commands:
  stop    <pattern> : stop server(s)
 
  dock              : docker status (images, containers,.)
+ clean             ! docker clean
  build   <image>   : build a docker image
  run     <image>.. : run a docker image
  kill    <image>   : stop a docker image
@@ -414,15 +415,28 @@ function dockerBuild {
   if [[ -n $id ]]
   then warn "Image $img [$id] already built"
        opt F || quit
+       
        _docker rmi -f $id
   fi
   dockerdir=$GitRepo/docker/$img
-  [ -d $dockerdir ] ||die "Directory $dockerdir does not exist"
+  [[ -d $dockerdir ]] || die "Directory $dockerdir does not exist"
+  if [ -f  $dockerdir/TOOLS ]
+  then mkdir -p $dockerdir/tools
+       for tool in $(cat $dockerdir/TOOLS)
+       do [[ -f $HOME/bin/$tool ]] || die "Cannot find $HOME/bin/$tool"
+	  diff $HOME/bin/$tool $dockerdir/tools/$tool >/dev/null
+	  if [[ $? -ne 0 ]]
+	  then info "Updating $dockerdir/tools/$tool"
+               cp -f $HOME/bin/$tool $dockerdir/tools/
+	  fi
+       done
+  fi
   _docker build -t $img --build-arg http_proxy=$Proxy $dockerdir 
+  _docker images
   quit
 }
 
-  
+
 
 function dockerRun {
   img=$1
@@ -443,7 +457,7 @@ function dockerRun {
        if [ -f $runfile ]
        then runopts="$runopts $(head -1 $runfile)"
        fi
-  else  runopts="-i --rm --network=$DOCKER_NETWORK"
+  else  runopts="-it --rm --network=$DOCKER_NETWORK"
   fi
   opt V && export runopts="$runopts -e VERBOSE=1"
   _docker run $runopts $img $*
@@ -485,6 +499,15 @@ function dockerStatus {
   _docker images
   _docker ps -a
   _docker volume ls
+  quit
+}
+
+function dockerClean {
+  dockerCheck
+  _docker container prune -f
+  for vol in $(http_proxy="" docker volume ls -q)
+  do grep -q "[0-9a-f]\{64\}" <<<$vol && _docker volume rm $vol
+  done
   quit
 }
 
@@ -590,6 +613,7 @@ case $Command in
   rm)       dockerRm $*;;
   dock)     dockerStatus;;
   kill)     dockerKill $*;;
+  clean)    dockerClean ;;
   status)   infraStatus;;
   start) ;;
   stop) ;;
