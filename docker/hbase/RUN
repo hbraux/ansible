@@ -1,2 +1,0 @@
--d -p 16010:16010 --mount source=hbase-data,target=/opt/hbase/data
-

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 if [[ $1 == --help ]]
-then [[ -n $CONTAINER_HELP ]] && echo $CONTAINER_HELP
+then [[ -n $SERVER_HELP ]] && echo $SERVER_HELP
 echo "
 Commands supported in interactive mode:
-  shell
+  shell (hbase shell)
 "
   exit
 fi
@@ -26,7 +26,7 @@ EOF
 clientPort=2182
 EOF
   # Ports: 9090 API and 9095 UI
-  # hbase thrift start > logs/hbase-thrift.log 2>&1 &
+  hbase thrift start > logs/hbase-thrift.log 2>&1 &
 
   # REST server (background)
   # hbase rest start > $logs_dir/hbase-rest.log 2>&1 &
@@ -39,15 +39,15 @@ fi
 
 # Update config for client mode (server alias)
 (cat > conf/zoo.cfg) <<EOF
-clientPortAddress=$CONTAINER_NAME
-server.1=$CONTAINER_NAME:2182
+clientPortAddress=$SERVER_NAME
+server.1=$SERVER_NAME:2182
 EOF
 (cat > conf/hbase-site.xml) <<EOF
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
   <property>
      <name>hbase.zookeeper.quorum</name>
-     <value>$CONTAINER_NAME</value>
+     <value>$SERVER_NAME</value>
   </property>
 </configuration>
 EOF
