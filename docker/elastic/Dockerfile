@@ -6,8 +6,8 @@ ENV ELASTICSEARCH_TARBALL http://164.132.225.18/~harold/elasticsearch-5.6.6.tar.
 #ENV ELASTICSEARCH_TARBALL http://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
 
 
-ENV CONTAINER_HELP Elasticsearch ${ELASTICSEARCH_VERSION} development server 
-ENV CONTAINER_NAME elastic
+ENV SERVER_HELP Elasticsearch ${ELASTICSEARCH_VERSION} Development Server 
+ENV SERVER_NAME elastic
 
 RUN set -x && mkdir -p /opt \
     && curl -s ${ELASTICSEARCH_TARBALL} | tar xzf - -C /opt \ 
@@ -23,9 +23,11 @@ WORKDIR /opt/elasticsearch
 
 USER elastic
 
-EXPOSE 9200 9300
+# publish 9200 on host
+EXPOSE 9200/TCP
+EXPOSE 9300
 
-VOLUME ["/opt/elasticsearch/data"]
+VOLUME /opt/elasticsearch/data
 
 ENTRYPOINT ["/entrypoint.sh"]
 

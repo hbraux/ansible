@@ -11,9 +11,11 @@ fi
 
 # start elastic
 if [[ $1 == hbase-server ]]
-then
-  # update config for server mode (data dir)
-  (cat > conf/hbase-site.xml) <<EOF
+then 
+  if [[ ! -f conf/zoo.cfg ]]
+  then 
+    # update config for server mode if not done already
+    (cat > conf/hbase-site.xml) <<EOF
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
   <property>
@@ -22,9 +24,10 @@ then
   </property>
 </configuration>
 EOF
-  (cat > conf/zoo.cfg) <<EOF
+    (cat > conf/zoo.cfg) <<EOF
 clientPort=2182
 EOF
+  fi
   # Ports: 9090 API and 9095 UI
   hbase thrift start > logs/hbase-thrift.log 2>&1 &
 
