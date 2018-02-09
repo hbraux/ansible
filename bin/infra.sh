@@ -135,6 +135,7 @@ DOCKER_NETWORK=udn  # user defined network to use DNS
 # ------------------------------------------
 
 declare Command
+declare -i DockerCommand=0
 declare GitRepo
 declare Proxy
 declare ServerType
@@ -148,6 +149,8 @@ declare VagrantStatus=$HOME/.vagrant
 declare VagrantId
 declare -i VagrantChanged=0
 declare DockerDir
+declare DockerImg
+declare -i DockerTty=1
 
 # ------------------------------------------
 # usage
@@ -385,6 +388,7 @@ function startServer {
 
 # small helper to ignore proxy and display the docker command being run
 function _docker {
+  DockerCommand=1
   info "\$ docker $*"
   http_proxy="" docker $* 
 }
@@ -393,105 +397,94 @@ function dockerCheck {
   which docker >/dev/null 2>&1 || die "Docker not installed"
   [[ -n $DOCKER_HOST ]] || die "DOCKER_HOST not defined"
   ping -c1 $DOCKER_HOST >/dev/null 2>&1
-  [ $? -eq 0 ] || die "Docker host $DOCKER_HOST not reachable"
+  [[ $? -eq 0 ]] || die "Docker host $DOCKER_HOST not reachable"
   _docker network ls | grep -q $DOCKER_NETWORK 
-  [ $? -eq 0 ] || _docker network create --driver bridge $DOCKER_NETWORK || die
+  [[ $? -eq 0 ]] || _docker network create --driver bridge $DOCKER_NETWORK || die
 
 }
 
-function getDockerDir {
-  [ $# -eq 0 ] && usage
+function getDockerImg {
+  [[ $# -eq 0 ]] && usage
+  DockerImg=$1
   dockerCheck
   getGitRepo
-  Dockerdir=$GitRepo/docker/$1
-  [ -d $Dockerdir ] || die "Command '$Command' not supported; and no docker repository named '$1'"
+  DockerDir=$GitRepo/docker/$DockerImg
+  [[ -d $DockerDir ]] || die "Command '$Command' not supported; and no docker repository named '$DockerImg'"
+  [[ -f $DockerDir/Dockerfile ]] || die "No file $DockerDir/Dockerfile"
 }
 
 function dockerBuild {
-  img=$1
-  getDockerDir $img
   getProxy
-  id=$(http_proxy="" docker images -q $img)
+  id=$(http_proxy="" docker images -q $DockerImg)
   if [[ -n $id ]]
-  then warn "Image $img [$id] already built"
-       opt F || quit
-       
+  then warn "Image $DockerImg [$id] already built"
+       opt F || return
        _docker rmi -f $id
   fi
-  dockerdir=$GitRepo/docker/$img
-  [[ -d $dockerdir ]] || die "Directory $dockerdir does not exist"
-  if [ -f  $dockerdir/TOOLS ]
-  then mkdir -p $dockerdir/tools
-       for tool in $(cat $dockerdir/TOOLS)
+  grep -q 'VOLUME \[' $DockerDir/Dockerfile && die "$TOOL_NAME does not support VOLUME in JSON format"
+  if [ -f  $DockerDir/TOOLS ]
+  then mkdir -p $DockerDir/tools
+       for tool in $(cat $DockerDir/TOOLS)
        do [[ -f $HOME/bin/$tool ]] || die "Cannot find $HOME/bin/$tool"
-	  diff $HOME/bin/$tool $dockerdir/tools/$tool >/dev/null
+	  diff $HOME/bin/$tool $DockerDir/tools/$tool >/dev/null
 	  if [[ $? -ne 0 ]]
-	  then info "Updating $dockerdir/tools/$tool"
-               cp -f $HOME/bin/$tool $dockerdir/tools/
+	  then info "Updating $DockerDir/tools/$tool"
+               cp -f $HOME/bin/$tool $DockerDir/tools/
 	  fi
        done
   fi
-  _docker build -t $img --build-arg http_proxy=$Proxy $dockerdir 
+  _docker build -t $DockerImg --build-arg http_proxy=$Proxy $DockerDir 
   _docker images
-  quit
 }
 
 
 
 function dockerRun {
-  img=$1
-  getDockerDir $img
-  shift
-  runfile=$Dockerdir/RUN
-  if [ $# -eq 0 ]
-  then id=$(http_proxy="" docker ps -a | grep "$img\$" | awk '{print $1}')
+  if [[ $# -eq 0 && $DockerImg != bash ]]
+  then id=$(http_proxy="" docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
        if [[ -n $id ]]
-       then _docker ps | grep -q "$img\$"
+       then _docker ps | grep -q "$DockerImg\$"
 	    if [ $? -eq 0 ]
-	    then warn "Container $img [$id] already running"
+	    then warn "Container $DockerImg [$id] already running"
 	    else _docker start $id
             fi
-	    quit
+	    return
        fi
-       runopts="--name=$img --network=$DOCKER_NETWORK"
-       if [ -f $runfile ]
-       then runopts="$runopts $(head -1 $runfile)"
-       fi
-  else  runopts="-it --rm --network=$DOCKER_NETWORK"
+       opts="-d --name=$DockerImg --network=$DOCKER_NETWORK"
+       volume=$(grep VOLUME $DockerDir/Dockerfile | awk '{print $2}')
+       [[ -n $volume ]] && opts="$opts --mount source=${DockerImg}-data,target=$volume"
+       for port in $(grep "EXPOSE .*/TCP" $DockerDir/Dockerfile | sed 's~EXPOSE \([0-9]\+\)/TCP~\1~')
+       do  opts="$opts -p $port:$port"
+       done
+  else opts="-i --rm --network=$DOCKER_NETWORK"
+     [[ $DockerTty -eq 1 ]] && opts="-t $opts"       
   fi
-  opt V && export runopts="$runopts -e VERBOSE=1"
-  _docker run $runopts $img $*
-  quit
+  opt V && export opts="$opts -e VERBOSE=1"
+  _docker run $opts $DockerImg $*
 }
 
 function dockerKill {
-  [ $# -eq 0 ] && usage
-  img=$1
-  shift
-  id=$(http_proxy="" docker ps  | grep "$img\$" | awk '{print $1}')
+  id=$(http_proxy="" docker ps  | grep "$DockerImg\$" | awk '{print $1}')
   if [[ -z $id ]]
-  then warn "Container $img not running"
+  then warn "Container $DockerImg not running"
   else _docker stop $id
   fi
-  quit
 }
 
 
 function dockerRm {
-  [ $# -eq 0 ] && usage
-  img=$1
-  shift
-  id=$(http_proxy="" docker ps -a | grep "$img\$" | awk '{print $1}')
+  id=$(http_proxy="" docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
   if [[ -z $id ]] 
-  then warn "Container $img not found"
-  else _docker ps  | grep -q "$img\$"
+  then warn "Container $DockerImg not found"
+  else _docker ps  | grep -q "$DockerImg\$"
        if [ $? -eq 0 ]
        then _docker stop $id
 	    sleep 2 
        fi
        _docker rm $id
+       volume=${DockerImg}-data
+       http_proxy="" docker volume ls | grep -q $volume && _docker volume rm $volume
   fi
-  quit
 }
 
 function dockerStatus {
@@ -499,7 +492,6 @@ function dockerStatus {
   _docker images
   _docker ps -a
   _docker volume ls
-  quit
 }
 
 function dockerClean {
@@ -508,8 +500,31 @@ function dockerClean {
   for vol in $(http_proxy="" docker volume ls -q)
   do grep -q "[0-9a-f]\{64\}" <<<$vol && _docker volume rm $vol
   done
-  quit
 }
+
+function dockerTest {
+  testfile=$DockerDir/test-server.sh
+  [[ -f $testfile ]] || die "No file $testfile"
+  dockerRm 
+  dockerBuild
+  # check --help
+  dockerRun --help || die
+  dockerRun
+  # execute test file
+  info "\nTesting $DockerImg Server Status\n------------------------------------------"
+  DockerTty=0 SERVER_NAME=$DockerImg source $testfile  || die
+  # check persistence (volume)
+  testfile=$DockerDir/test-volume.sh
+  if [[ -f $testfile ]] 
+  then info "\nTesting $DockerImg Server Persistence\n------------------------------------------"
+       dockerKill
+       dockerRun
+       DockerTty=0 SERVER_NAME=$DockerImg source $testfile  || die
+  fi
+  dockerRm
+  info "\nTEST OK"
+}
+ 
 
 # ------------------------------------------
 # Ansible tools
@@ -606,20 +621,25 @@ shift
 while read_opts -FV $1
 do shift ;done
 
+
 case $Command in
   env)      setupEnv;;
-  build)    dockerBuild $1;;
-  run)      dockerRun $*;;
-  rm)       dockerRm $*;;
+  build)    getDockerImg $1; dockerBuild;;
+  run)      getDockerImg $1; shift; dockerRun $*;;
+  rm)       getDockerImg $1; dockerRm;;
+  kill)     getDockerImg $1; dockerKill;;
+  test)     getDockerImg $1; dockerTest;;
   dock)     dockerStatus;;
-  kill)     dockerKill $*;;
   clean)    dockerClean ;;
   status)   infraStatus;;
   start) ;;
   stop) ;;
   deploy) ;;
   destroy) ;;
-  *) dockerRun $Command $*;;
+  *) getDockerImg $Command; dockerRun $*;;
 esac
+
+[[ $DockerCommand -eq 1 ]] && quit
 [ $# -eq 0 ] && usage
 ansibleRun $*
+quit
