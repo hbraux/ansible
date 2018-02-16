@@ -1,6 +1,6 @@
-FROM jdk
+FROM jdk:8
 
-ENV ELASTICSEARCH_VERSION=5.6.6
+ENV ELASTICSEARCH_VERSION 5.6.6
 # squid does not handle dynamic content so using my site
 ENV ELASTICSEARCH_TARBALL http://164.132.225.18/~harold/elasticsearch-5.6.6.tar.gz 
 #ENV ELASTICSEARCH_TARBALL http://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz

@@ -3,21 +3,41 @@
 if [[ $1 == --help ]]
 then [[ -n $SERVER_HELP ]] && echo $SERVER_HELP
 echo "
-Commands supported in interactive mode (samples)
-  curl -s -XGET http://$SERVER_NAME:9200 
+Supported variables
+  LOGSTASH_INPUT   : input plugin conf (by default tcp/json)
+  LOGSTASH_OUTPUT  : output plugin conf (by default elasticsearch)
+  LOGSTASH_FILTER  : filter plugin conf (none by default)
+  LOGSTASH_ESHOST  : elasticsearch host (default 'elastic:9200')
+  LOGSTASH_ESINDEX : elasticsearch index (by default 'logstash')
+
+Commands supported in interactive mode
+  shell : Logstash interactive Ruby shell
 "
   exit
 fi
 
-# start elastic
-if [[ $1 == "elasticsearch" ]]
+# start logstash
+if [[ $1 == logstash ]]
 then
-  # reducing HEAP memory (2g by default) for a test cluster
-  export ES_JAVA_OPTS="-Xms512m -Xmx512m"
-  sed -r -i "s/(^-Xms.*)//" config/jvm.options
-  sed -r -i "s/(^-Xmx.*)//" config/jvm.options
-  # starting Elastic in production mode (https://www.elastic.co/guide/en/elasticsearch/reference/5.2/bootstrap-checks.html#_development_vs_production_mode)
-  grep -q 'network.host: \[_eth0_\]' config/elasticsearch.yml || echo "network.host: [_eth0_]" >> config/elasticsearch.yml
-fi
+   cfgfile=data/logstash.conf
 
-exec "$@"
+  if [[ ! -f $cfgfile ]]
+  then 
+    LOGSTASH_INDEX=${LOGSTASH_INDEX:-logstash}
+    LOGSTASH_ESHOST=${LOGSTASH_ESHOST:-http://elastic:9200}
+    DEFAULT_INPUT="tcp { port => 5000 codec => json }"
+    DEFAULT_OUTPUT="elasticsearch { hosts => [\"$LOGSTASH_ESHOST\"] index => \"$LOGSTASH_ESINDEX\" }"
+    LOGSTASH_INPUT=${LOGSTASH_INPUT:-$DEFAULT_INPUT}
+    LOGSTASH_OUTPUT=${LOGSTASH_OUTPUT:-$DEFAULT_OUTPUT}
+    
+    echo "input{ $LOGSTASH_INPUT }" >>$cfgfile
+    [[ -n $LOGSTASH_FILTER ]] &&  echo "filter { $LOGSTASH_FILTER }" >>$cfgfile
+    echo "output { $LOGSTASH_OUTPUT }" >>$cfgfile
+  fi
+  exec $@ -f $cfgfile
+else
+  if [[ $1 == shell ]]
+  then exec bin/logstash -i irb
+  else exec "$@"
+  fi
+fi

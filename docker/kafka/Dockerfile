@@ -1,4 +1,4 @@
-FROM jdk
+FROM jdk:8
 
 # using local Apache mirror
 ARG MIRROR=apache.crihan.fr

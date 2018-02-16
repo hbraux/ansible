@@ -1,4 +1,4 @@
-FROM jdk
+FROM jdk:8
 
 ARG MIRROR=apache.crihan.fr 
 
