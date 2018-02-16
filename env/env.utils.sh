@@ -19,7 +19,6 @@ function gpush {
   [[ -n $comments ]] || comments="no comments"
   git add .
   git commit -m "$comments"
-  _setproxy
   git push
 }
 

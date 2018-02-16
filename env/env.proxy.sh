@@ -1,44 +1,13 @@
-# file to be sources to handle proxy
+# proxy handling
 
 # those variables shall be set ahead 
 export NO_PROXY=${NO_PROXY:-localhost}
-export PROXY_HOST=${PROXY_HOST:-}
+export PROXY_HOST=${PROXY_HOST:-localhost}
 export PROXY_PORT=${PROXY_PORT:-3128}
 export PROXY_AUTH_HOSTS=
 export PROXY_AUTH_STR=
 
-function _setproxy {
-  _authproxy
-  export http_proxy=http://$PROXY_HOST:$PROXY_PORT
-  export https_proxy=$http_proxy
-  export no_proxy=$NO_PROXY
-}
-
-function _unsetproxy {
-  export http_proxy=
-  export https_proxy=
-  export no_proxy=
-}
-
-function proxy {
-  if [[ -z $PROXY_HOST ]]
-  then echo "ERROR:\$PROXY_HOST is not defined" ; return
-  fi
-  if [[ $1 == test ]]
-  then echo "HTTP code 200 must be returned ..."
-       curl -si -m2 http://www.google.fr | head -1
-       return
-  fi
-  if [[ $1 == unset || $1 == u ]]
-  then _unsetproxy
-  else _setproxy
-  fi
-  echo "http_proxy=$http_proxy"
-  echo "https_proxy=$https_proxy"
-  echo "no_proxy=$no_proxy"
-}
-
-function _authproxy() {
+function _proxy_auth {
   [[ -n $PROXY_AUTH_HOSTS ]] || return
   if [[ ! -f $HOME/.netrc ]] 
   then echo "No file $HOME/.netrc"; return
@@ -53,4 +22,51 @@ function _authproxy() {
      [[ $? -eq 0 ]] || echo "Authentification failed on $h"
   done
 }
+
+
+function _proxy_set {
+  _proxy_auth
+  export http_proxy=http://${1:-$PROXY_HOST}:$PROXY_PORT
+  export https_proxy=$http_proxy
+  export no_proxy=$NO_PROXY
+  echo "http_proxy=$http_proxy"
+  echo "https_proxy=$https_proxy"
+  echo "no_proxy=$no_proxy"
+}
+
+function _proxy_unset {
+  export http_proxy=
+  export https_proxy=
+  export no_proxy=
+  echo "http_proxy="
+  echo "https_proxy="
+}
+
+function _proxy_help {
+  echo "Usage:
+proxy        : set proxy variables
+proxy unset  : unset proxy variables
+proxy test   : check proxy connection
+proxy squid  : set proxy ro Squid
+"
+}
+
+function _proxy_test {
+  echo "HTTP code 200 must be returned ..."
+  curl -si -m2 http://www.google.fr | head -1
+}
+
+function proxy {
+  if [[ $# -eq 0 ]]
+  then _proxy_set
+  else 
+    case $1 in
+      u|unset) _proxy_unset;;
+      squid)   _proxy_set $PROXY_SQUID;;
+      test)    _proxy_test;;
+      *)       _proxy_help;;
+    esac
+  fi
+}
+
 

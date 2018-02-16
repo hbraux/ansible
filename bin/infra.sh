@@ -8,48 +8,89 @@
 # 2) install Vagrant boxes for CentOS7 and Alpine3.6 
 
 TOOL_NAME=infra
-TOOL_VERS=0.1
+TOOL_VERSION=0.1
 
-##################################################
-# BEGIN: common.sh 1.7
-##################################################
-# expect TOOL_NAME and TOOL_VERS to be defined in header
-[[ -n $TOOL_NAME ]] || TOOL_NAME=$0
+###############################################################################
+# BEGIN: common.sh 2.0
+###############################################################################
 
-# config file
-declare CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
+[[ -n $TOOL_NAME ]] || TOOL_NAME=${0/.sh/}
 
-# tmp file and dir to be used in the code
+# -----------------------------------------------------------------------------
+# Shell Colors
+# -----------------------------------------------------------------------------
+declare BLACK="\e[m"
+declare RED="\e[1;31m"
+declare GREEN="\e[0;32m"
+declare BLUE="\e[0;34m"
+declare PURPLE="\e[1;35m"
+declare BOLD="\e[1;30m"
+
+# -----------------------------------------------------------------------------
+# Global variables that can be used anywhere
+# -----------------------------------------------------------------------------
+
+# Temporary File and Directory (purged on exit)
 declare TmpFile=$HOME/tmp.${TOOL_NAME}_f$$
 declare TmpDir=$HOME/tmp.${TOOL_NAME}_d$$
 
-# command line options
+# Log file (appending)
+declare LogFile=${TOOL_NAME}.log
+
+# command line parameters
+declare Command=
+declare Arguments=
+
+# -----------------------------------------------------------------------------
+# Internal variables (reserved for common part)
+# -----------------------------------------------------------------------------
+
+# file cheksum, updated when commiting in Git
+_MD5SUM="d2e3fe7995de5d5790c17b372a3ba84c"
+
+# config file
+declare _CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
+
+# command line Options
 declare -A _Opts
 
-# colors
-declare Black="\e[m"
-declare Red="\e[0;31m"
-declare Green="\e[0;32m"
-declare Blue="\e[0;34m"
-declare Purple="\e[0;35m"
+# -----------------------------------------------------------------------------
+# Log functions
+# -----------------------------------------------------------------------------
+# logging is by default to stdout, unless -L is specified
 
-# log functions
+function _log {
+  level=$1
+  shift
+  dt=$(date +'%F %T')
+  echo -e "$level\t$dt\t$*" >>$LogFile
+}
+
 function debug {
-  opt D && echo -e "${Blue}# $*${Black}"
+  opt D || return
+  opt L && _log DEBUG $* && return
+  echo -e "${BLUE}# $*${BLACK}"
 }
 function info {
-  echo -e "${Blue}$*${Black}"
+  opt L && _log INFO $* && return
+  echo -e "${BOLD}$*${BLACK}"
 }
 function warn {
-  echo -e "${Purple}WARNING: $*${Black}"
+  opt L && _log WARN $* && return
+  echo -e "${PURPLE}WARNING: $*${BLACK}"
 }
 function error {
-  echo -e "${Red}ERROR: $*${Black}"
+  opt L &&  _log ERROR $* 
+  # always print errors to stdout
+  echo -e "${RED}ERROR: $*${BLACK}"
 }
 
-# quit: replace exit. cleanup tmp
+# -----------------------------------------------------------------------------
+# quit and die functions
+# -----------------------------------------------------------------------------
+
 function quit {
-  if [ $# -eq 0 ]
+  if [[ $# -eq 0 ]]
   then exitcode=0
   else exitcode=$1
   fi
@@ -58,7 +99,6 @@ function quit {
   exit $exitcode
 }
 
-# die: quit with error message
 function die {
   if [[ $# -eq 0 ]]
   then error "command failed"
@@ -67,58 +107,90 @@ function die {
   quit 1
 }
 
+# -----------------------------------------------------------------------------
+# internal functions
+# -----------------------------------------------------------------------------
+
 # load config file and check expected variables 
-function load_cfg {
-  if [ -f $CfgFile ]
+function _loadcfg {
+  if [[ -f $_CfgFile ]]
   then 
-     . $CfgFile || die "cannot load $CfgFile"
-     for var in $*
-     do eval "val=\$$var"
-        [[ -z $val ]] && die "cannot find $var in file $Cfgfile"
-     done
-  else [ $# -eq 0 ] || die "file $CfgFile is missing"
+     # check that syntax is consistent
+     [[ $(egrep -v '^#' $_CfgFile | egrep -v '^[ ]*$' | egrep -vc '^[A-Z_]*_=') -eq 0 ]] || die "Config file $_CfgFile is not correct"
+     # load by sourcing it (stop on error)
+     set -e 
+     . $_CfgFile 
+     set +e
   fi
 }
 
-# read options -x in command line
-function read_opts {
-  if [[ ${#_Opts[@]} -eq 0 ]]
-  then for ((i=1; i<${#1}; i++ ))
-       do _Opts[${1:$i:1}]=0
-       done
-       # option Debug (-D) is always supported
-      _Opts[D]=0
-  fi
-  # ignore options --param
-  [[ ${2:0:2} == '--' ]] && return 1
-  if [[ ${2:0:1} == '-' ]]
-  then [[ -n ${_Opts[${2:1}]} ]] || die "option $2 not supported"
-       _Opts[${2:1}]=1
+# set supported options 
+function _setopts {
+  for ((i=0; i<${#1}; i++ ))
+  do _Opts[${1:$i:1}]=0
+  done
+  # option Debug (-D) and Log (-L) are always supported
+  _Opts[D]=0
+  _Opts[L]=0
+}
+
+# read options -X in command line
+function _readopts {
+  # ignore arguments --xxx
+  [[ ${1:0:2} == -- ]] && return 1
+  if [[ ${1:0:1} == - ]]
+  then
+    for ((i=1; i<${#1}; i++ ))
+    do o=${1:$i:1}
+       [[ -n ${_Opts[$o]} ]] || die "option -$o not supported by $TOOL_NAME"
+       _Opts[$o]=1
+    done
   else return 1
   fi 
 }
 
-# check if option -x was set
+# display tool name and version
+function _about {
+  suffix=""
+  [[ $(egrep -v '^_MD5SUM=' $0 | /usr/bin/md5sum | sed 's/ .*//') \
+      != $_MD5SUM ]] && suffix=".draft"
+  echo "# $TOOL_NAME $TOOL_VERSION$suffix"
+}
+
+# -----------------------------------------------------------------------------
+# public functions
+# -----------------------------------------------------------------------------
+
+# opt X check if option -X was set (return 0 if true) 
 function opt {
-  [[ -n ${_Opts[${1}]} ]] || die "(bash) missing option -$1 in read_opts"
+  [[ -n ${_Opts[${1}]} ]] || die "(code) missing option -$1 in init"
   [[ ${_Opts[${1}]} -eq 1 ]] || return 1
 }
 
 
-# file cheksum, updated when commiting in Git
-_MD5SUM="d2e3fe7995de5d5790c17b372a3ba84c"
-
-# about display tool name and version
-function about {
-  suffix=""
-  [[ $(egrep -v '^_MD5SUM=' $0 | /usr/bin/md5sum | sed 's/ .*//') \
-      != $_MD5SUM ]] && suffix=".draft"
-  echo "$TOOL_NAME $TOOL_VERS$suffix"
+# analyse command line and set $Command $Arguments and options
+# the first arguments are supported options, the second $@ 
+function init {
+  _about
+  _loadcfg
+  if [[ ${1:0:1} == - ]]
+  then _setopts ${1:1} ; shift
+  fi
+  [[ $# -eq 0 ]] && usage
+  cmdline=$@
+  Command=$1
+  shift
+  # read options (support -abc but also -a -b -c)
+  while _readopts $1
+  do shift ;done
+  Arguments=$@
+  opt L && _log INFO "COMMAND: $TOOL_NAME.sh $cmdline"
 }
 
-##################################################
+
+###############################################################################
 # END: common.sh
-##################################################
+###############################################################################
 
 # ------------------------------------------
 # Constants
@@ -134,8 +206,7 @@ DOCKER_NETWORK=udn  # user defined network to use DNS
 # Global variables
 # ------------------------------------------
 
-declare Command
-declare -i DockerCommand=0
+declare -i DockerCommand=1
 declare GitRepo
 declare Proxy
 declare ServerType
@@ -157,12 +228,7 @@ declare -i DockerTty=1
 # ------------------------------------------
 
 function usage {
-  echo "
-Usage: $TOOL_NAME.sh <command> [-<flags>] <arguments>*
-
-Supported flags:
-  -V   : verbose
-  -F   : force
+  echo "Usage: $TOOL_NAME.sh <command> [-options] <arguments>*
 
 Supported commands:
  env               : setup local env
@@ -170,15 +236,21 @@ Supported commands:
  status            : servers status
  deploy  <pattern> : deploy server(s)
  destroy <pattern> : destroy server(s)
- start   <pattern> : start server(s)
- stop    <pattern> : stop server(s)
+ on      <pattern> : start server(s)
+ off     <pattern> : shutdown server(s)
 
  dock              : docker status (images, containers,.)
- clean             ! docker clean
  build   <image>   : build a docker image
- run     <image>.. : run a docker image
- kill    <image>   : stop a docker image
- rm      <image>   : stop and remove a docker container
+ [run]   <image> ...: run a docker image (run is optional), add --help for help
+ stop    <image>   : stop a docker image
+ rm      <image>   : remove a docker container (stop it if needed)
+ test    <image>   : rrun 
+ log     <image>   : docker logs
+ clean             ! docker clean
+
+Supported options:
+  -v : verbose
+  -f : force
 "
   quit
 }
@@ -200,7 +272,8 @@ function getDomain {
 }
 
 function getProxy {
-  [[ -n $PROXY_HOST ]] && Proxy=http://$(grep $PROXY_HOST /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}  
+  [[ -n $PROXY_SQUID ]] && Proxy=http://$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}  
+  Proxy=${Proxy:-$http_proxy}
 }
 
 function getHostIp {
@@ -357,7 +430,7 @@ function destroy {
 
 function infraStatus {
   getDomain
-  opt F && refreshVagrant
+  opt f && refreshVagrant
   [[ -f $VagrantStatus ]] || refreshVagrant
   info "Servers Status"
   for serv in $(cat $VagrantStatus | awk '{print $2}')
@@ -386,11 +459,10 @@ function startServer {
 # docker tools
 # ------------------------------------------
 
-# small helper to ignore proxy and display the docker command being run
+# small helper to display the docker command being run
 function _docker {
-  DockerCommand=1
   info "\$ docker $*"
-  http_proxy="" docker $* 
+  docker $* 
 }
 
 function dockerCheck {
@@ -409,19 +481,24 @@ function getDockerImg {
   dockerCheck
   getGitRepo
   DockerDir=$GitRepo/docker/$DockerImg
-  [[ -d $DockerDir ]] || die "Command '$Command' not supported; and no docker repository named '$DockerImg'"
+  if [[ ! -d $DockerDir ]] 
+  then [[ $Command == build ]] && die "no docker repository named '$DockerImg'"
+    die "Command '$Command' not supported; and no docker repository named '$DockerImg'"
+  fi
   [[ -f $DockerDir/Dockerfile ]] || die "No file $DockerDir/Dockerfile"
 }
 
 function dockerBuild {
   getProxy
-  id=$(http_proxy="" docker images -q $DockerImg)
+  id=$(docker images -q ${DockerImg}:latest)
   if [[ -n $id ]]
   then warn "Image $DockerImg [$id] already built"
-       opt F || return
+       opt f || return
        _docker rmi -f $id
   fi
-  grep -q 'VOLUME \[' $DockerDir/Dockerfile && die "$TOOL_NAME does not support VOLUME in JSON format"
+  egrep -q '^VOLUME \[' $DockerDir/Dockerfile && die "$TOOL_NAME does not support VOLUME in JSON format"
+  vers=$(egrep -i "^ENV ${DockerImg}[A-Z]*_VERSION" $DockerDir/Dockerfile | awk '{print $3}')
+  [[ -n $vers ]] || warn "No VERSION found in Dockerfile"
   if [ -f  $DockerDir/TOOLS ]
   then mkdir -p $DockerDir/tools
        for tool in $(cat $DockerDir/TOOLS)
@@ -433,15 +510,18 @@ function dockerBuild {
 	  fi
        done
   fi
-  _docker build -t $DockerImg --build-arg http_proxy=$Proxy $DockerDir 
-  _docker images
+  tags="-t $DockerImg:latest"
+  [[ -n $vers ]] && tags="$tags -t $DockerImg:$vers"
+  _docker build $tags --build-arg http_proxy=$Proxy $DockerDir 
+  _docker images | grep -v " latest "
 }
 
 
 
 function dockerRun {
-  if [[ $# -eq 0 && $DockerImg != bash ]]
-  then id=$(http_proxy="" docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
+  if [[ $# -eq 0 && $DockerImg != bash && $DockerImg != python ]]
+  then # server mode
+      id=$(docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
        if [[ -n $id ]]
        then _docker ps | grep -q "$DockerImg\$"
 	    if [ $? -eq 0 ]
@@ -451,20 +531,23 @@ function dockerRun {
 	    return
        fi
        opts="-d --name=$DockerImg --network=$DOCKER_NETWORK"
-       volume=$(grep VOLUME $DockerDir/Dockerfile | awk '{print $2}')
+       volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
        [[ -n $volume ]] && opts="$opts --mount source=${DockerImg}-data,target=$volume"
-       for port in $(grep "EXPOSE .*/TCP" $DockerDir/Dockerfile | sed 's~EXPOSE \([0-9]\+\)/TCP~\1~')
+       for port in $(egrep '^EXPOSE .*/TCP' $DockerDir/Dockerfile | sed 's~EXPOSE \([0-9]\+\)/TCP~\1~')
        do  opts="$opts -p $port:$port"
        done
-  else opts="-i --rm --network=$DOCKER_NETWORK"
+       for e in $(env |egrep "^${DockerImg^^}_")
+       do opts="$opts -e $e"
+       done
+  else # command mode
+       opts="-i --rm --network=$DOCKER_NETWORK"
      [[ $DockerTty -eq 1 ]] && opts="-t $opts"       
   fi
-  opt V && export opts="$opts -e VERBOSE=1"
   _docker run $opts $DockerImg $*
 }
 
-function dockerKill {
-  id=$(http_proxy="" docker ps  | grep "$DockerImg\$" | awk '{print $1}')
+function dockerStop {
+  id=$(docker ps  | grep "$DockerImg\$" | awk '{print $1}')
   if [[ -z $id ]]
   then warn "Container $DockerImg not running"
   else _docker stop $id
@@ -473,7 +556,7 @@ function dockerKill {
 
 
 function dockerRm {
-  id=$(http_proxy="" docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
+  id=$(docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
   if [[ -z $id ]] 
   then warn "Container $DockerImg not found"
   else _docker ps  | grep -q "$DockerImg\$"
@@ -483,7 +566,7 @@ function dockerRm {
        fi
        _docker rm $id
        volume=${DockerImg}-data
-       http_proxy="" docker volume ls | grep -q $volume && _docker volume rm $volume
+       docker volume ls | grep -q $volume && _docker volume rm $volume
   fi
 }
 
@@ -497,7 +580,7 @@ function dockerStatus {
 function dockerClean {
   dockerCheck
   _docker container prune -f
-  for vol in $(http_proxy="" docker volume ls -q)
+  for vol in $(docker volume ls -q)
   do grep -q "[0-9a-f]\{64\}" <<<$vol && _docker volume rm $vol
   done
 }
@@ -517,14 +600,17 @@ function dockerTest {
   testfile=$DockerDir/test-volume.sh
   if [[ -f $testfile ]] 
   then info "\nTesting $DockerImg Server Persistence\n------------------------------------------"
-       dockerKill
+       dockerStop
        dockerRun
        DockerTty=0 SERVER_NAME=$DockerImg source $testfile  || die
   fi
   dockerRm
   info "\nTEST OK"
 }
- 
+
+function dockerLogs {
+  _docker logs $DockerImg
+} 
 
 # ------------------------------------------
 # Ansible tools
@@ -582,16 +668,16 @@ function ansibleRun {
     do ping -c1 $server >/dev/null
       alive=$?
       case $Command in
-	start)   if [ $alive -ne 0 ]
+	on) if [ $alive -ne 0 ]
 	  then startServer $server
 	  runansible=1
-	  else warn "$server is already started"
+	  else warn "$server is already running"
 	  fi;;
 	deploy)   runansible=1; [ $alive -ne 0 ] && up $server;;
 	destroy) destroy $server;;
-	stop)    if [ $alive -eq 0 ]
+	off)    if [ $alive -eq 0 ]
 	  then runansible=1
-	  else warn "$server is already stopped"
+	  else warn "$server is already down"
 	  fi;;
       esac
     done
@@ -609,37 +695,29 @@ function ansibleRun {
 # Command Line
 # ------------------------------------------
 
-about
-# load config file if any
-load_cfg
-
-
-[ $# -eq 0 ] && usage
-Command=$1
-shift
-# read opts
-while read_opts -FV $1
-do shift ;done
-
+# analyse command line
+init -fv $@
 
 case $Command in
   env)      setupEnv;;
-  build)    getDockerImg $1; dockerBuild;;
-  run)      getDockerImg $1; shift; dockerRun $*;;
-  rm)       getDockerImg $1; dockerRm;;
-  kill)     getDockerImg $1; dockerKill;;
-  test)     getDockerImg $1; dockerTest;;
-  dock)     dockerStatus;;
+  b|build)  getDockerImg $Arguments; dockerBuild;;
+  run)      getDockerImg $Arguments; dockerRun ${Arguments/$DockerImg/};;
+  rm)       getDockerImg $Arguments; dockerRm;;
+  stop)     getDockerImg $Arguments; dockerStop;;
+  test)     getDockerImg $Arguments; dockerTest;;
+  l|log)    getDockerImg $Arguments; dockerLogs;;
+  d|dock)   dockerStatus;;
   clean)    dockerClean ;;
   status)   infraStatus;;
-  start) ;;
-  stop) ;;
-  deploy) ;;
-  destroy) ;;
-  *) getDockerImg $Command; dockerRun $*;;
+  on)       DockerCommand=0;;
+  off)      DockerCommand=0;;
+  deploy)   DockerCommand=0;;
+  destroy)  DockerCommand=0;;
+  *) getDockerImg $Command; dockerRun $Arguments;;
 esac
 
-[[ $DockerCommand -eq 1 ]] && quit
+[[ $DockerCommand -eq 0 ]] || quit
 [ $# -eq 0 ] && usage
-ansibleRun $*
+ansibleRun $Arguments
+
 quit
