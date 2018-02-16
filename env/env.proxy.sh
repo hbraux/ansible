@@ -4,8 +4,8 @@
 export NO_PROXY=${NO_PROXY:-localhost}
 export PROXY_HOST=${PROXY_HOST:-localhost}
 export PROXY_PORT=${PROXY_PORT:-3128}
-export PROXY_AUTH_HOSTS=
-export PROXY_AUTH_STR=
+export PROXY_AUTH_HOSTS
+export PROXY_AUTH_STR
 
 function _proxy_auth {
   [[ -n $PROXY_AUTH_HOSTS ]] || return
