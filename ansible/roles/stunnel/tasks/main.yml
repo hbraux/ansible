@@ -26,8 +26,15 @@
     owner: "{{ stunnel.user }}"
   become: true
 
+- name: override binary (single thread)
+  copy:
+    src: files/stunnel
+    dest: /usr/bin/stunnel
+  become: true
+
 - name: create systemd script
   template:
     src: "stunnel-service.j2"
     dest: /etc/systemd/system/stunnel.service
   become: true
+
