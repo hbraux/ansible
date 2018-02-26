@@ -1,3 +1,6 @@
+# custom prompt
+PS1='\[\033[1;32m\]\u@\h:\[\033[1;34m\] \w \$ \[\033[0m\]'
+
 # aliases
 alias rmtilde='find . -name "*~" -exec rm {} \;'
 alias sf="$HOME/bin/syncFile.sh"
@@ -17,7 +20,7 @@ function gpush {
   find . -name "*~" -exec rm {} \;
   comments="$1"
   [[ -n $comments ]] || comments="no comments"
-  git add .
+  git add --all
   git commit -m "$comments"
   git push
 }
