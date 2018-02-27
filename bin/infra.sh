@@ -228,9 +228,13 @@ declare -i DockerTty=1
 # ------------------------------------------
 
 function usage {
-  echo "Usage: $TOOL_NAME.sh <command> [-options] <arguments>*
+  echo "Usage: $TOOL_NAME.sh command [options] arguments*
 
-Supported commands:
+Options:
+  -v : verbose
+  -f : force
+
+commands:
  env               : setup local env
 
  status            : servers status
@@ -239,18 +243,17 @@ Supported commands:
  on      <pattern> : start server(s)
  off     <pattern> : shutdown server(s)
 
+ <pattern> is a server hostname (or substring) or an Ansible subset
+
  dock              : docker status (images, containers,.)
  build   <image>   : build a docker image
- [run]   <image> ...: run a docker image (run is optional), add --help for help
+ [run]   <image>...: run a docker image (run is optional). Add --help for info
  stop    <image>   : stop a docker image
  rm      <image>   : remove a docker container (stop it if needed)
- test    <image>   : rrun 
- log     <image>   : docker logs
+ test    <image>   : test a docker image
+ logs    <image>   : docker logs
  clean             ! docker clean
 
-Supported options:
-  -v : verbose
-  -f : force
 "
   quit
 }
@@ -590,22 +593,34 @@ function dockerTest {
   [[ -f $testfile ]] || die "No file $testfile"
   dockerRm 
   dockerBuild
-  # check --help
+  info "\nTesting --help\n------------------------------------------"
   dockerRun --help || die
+  info "\nStarting server $DockerImg\n------------------------------------------"
   dockerRun
+  # wating 10 sec. for server to start
+  sleep 10
+  docker ps | grep -q " $DockerImg "
+  if [ $? -ne 0 ]
+  then docker logs $DockerImg
+       die "Server failed to start"
+  fi
   # execute test file
   info "\nTesting $DockerImg Server Status\n------------------------------------------"
-  DockerTty=0 SERVER_NAME=$DockerImg source $testfile  || die
+  DockerTty=0 SERVER_NAME=$DockerImg source $testfile |& tee $TmpFile || die
+  grep -q "Exception " $TmpFile
+  [[ $? -eq 0 ]] && die 
   # check persistence (volume)
   testfile=$DockerDir/test-volume.sh
   if [[ -f $testfile ]] 
   then info "\nTesting $DockerImg Server Persistence\n------------------------------------------"
        dockerStop
+       sleep 1
        dockerRun
+       sleep 5
        DockerTty=0 SERVER_NAME=$DockerImg source $testfile  || die
   fi
   dockerRm
-  info "\nTEST OK"
+  info "\nTESTING OK"
 }
 
 function dockerLogs {
@@ -699,13 +714,14 @@ function ansibleRun {
 init -fv $@
 
 case $Command in
+  help)     usage;;
   env)      setupEnv;;
   b|build)  getDockerImg $Arguments; dockerBuild;;
   run)      getDockerImg $Arguments; dockerRun ${Arguments/$DockerImg/};;
   rm)       getDockerImg $Arguments; dockerRm;;
   stop)     getDockerImg $Arguments; dockerStop;;
   test)     getDockerImg $Arguments; dockerTest;;
-  l|log)    getDockerImg $Arguments; dockerLogs;;
+  l|logs)   getDockerImg $Arguments; dockerLogs;;
   d|dock)   dockerStatus;;
   clean)    dockerClean ;;
   status)   infraStatus;;

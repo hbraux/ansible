@@ -1,4 +1,3 @@
-sleep 4 # wait for server to start
 dockerRun shell <<EOF
 create_namespace 'test_ns'
 create 'test_ns:test_table','C'

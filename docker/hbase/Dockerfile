@@ -6,7 +6,7 @@ ENV HBASE_VERSION 1.2.6
 ENV HBASE_TARBALL http://${MIRROR}/dist/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz
 
 ENV SERVER_NAME hbase
-ENV SERVER_HELP HBase ${HBASE_VERSION} development server (with Zookeeper)
+ENV SERVER_INFO HBase ${HBASE_VERSION} development server (with Zookeeper)
 
 RUN set -x && mkdir -p /opt \
     && curl -s ${HBASE_TARBALL} | tar xzf - -C /opt \ 
@@ -36,6 +36,6 @@ VOLUME /opt/hbase/data
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["hbase-server"]
+CMD ["--start"]
 
 

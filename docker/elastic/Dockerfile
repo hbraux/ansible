@@ -6,7 +6,7 @@ ENV ELASTICSEARCH_TARBALL http://164.132.225.18/~harold/elasticsearch-5.6.6.tar.
 #ENV ELASTICSEARCH_TARBALL http://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
 
 
-ENV SERVER_HELP Elasticsearch ${ELASTICSEARCH_VERSION} Development Server 
+ENV SERVER_INFO Elasticsearch ${ELASTICSEARCH_VERSION} Development Server 
 ENV SERVER_NAME elastic
 
 RUN set -x && mkdir -p /opt \
@@ -31,6 +31,6 @@ VOLUME /opt/elasticsearch/data
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["elasticsearch"]
+CMD ["--start"]
 
 

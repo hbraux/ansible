@@ -6,7 +6,7 @@ ENV LOGSTASH_TARBALL http://164.132.225.18/~harold/logstash-5.6.6.tar.gz
 #ENV LOGSTASH_TARBALL http://artifacts.elastic.co/downloads/logstash/logstash-${LOGSTASH_VERSION}.tar.gz
 
 
-ENV SERVER_HELP Logstash ${LOGSTASH_VERSION} Development Server 
+ENV SERVER_INFO Logstash ${LOGSTASH_VERSION} Development Server 
 ENV SERVER_NAME logstash
 
 RUN set -x && mkdir -p /opt \
@@ -35,6 +35,6 @@ EXPOSE 5000 5001
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["logstash"]
+CMD ["--start"]
 
 

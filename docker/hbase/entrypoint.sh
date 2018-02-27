@@ -1,21 +1,17 @@
 #!/bin/bash
 
-if [[ $1 == --help ]]
-then [[ -n $SERVER_HELP ]] && echo $SERVER_HELP
-echo "
-Commands supported in interactive mode:
-  shell (hbase shell)
-"
-  exit
-fi
+echo "$SERVER_INFO"
 
-# start elastic
-if [[ $1 == hbase-server ]]
-then 
-  if [[ ! -f conf/zoo.cfg ]]
-  then 
-    # update config for server mode if not done already
-    (cat > conf/hbase-site.xml) <<EOF
+function _help {
+ echo "Commands in interactive mode
+  shell : hbase shell
+"
+}
+
+function _setup {
+  [[ -f .setup ]] && return
+
+  cat > conf/hbase-site.xml <<EOF
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
   <property>
@@ -24,28 +20,15 @@ then
   </property>
 </configuration>
 EOF
-    (cat > conf/zoo.cfg) <<EOF
+  cat > conf/zoo.cfg <<EOF
 clientPort=2182
 EOF
-  fi
-  # Ports: 9090 API and 9095 UI
-  hbase thrift start > logs/hbase-thrift.log 2>&1 &
+  
+  touch .setup
+}
 
-  # REST server (background)
-  # hbase rest start > $logs_dir/hbase-rest.log 2>&1 &
-
-  # Master server (Foreground) that also starts the region server
-  # Ports: Master: 16000 API, 16010 UI; 2181 ZK;  Region: 16020 API, 16030 UI
-  exec hbase master start 
-  exit
-fi
-
-# Update config for client mode (server alias)
-(cat > conf/zoo.cfg) <<EOF
-clientPortAddress=$SERVER_NAME
-server.1=$SERVER_NAME:2182
-EOF
-(cat > conf/hbase-site.xml) <<EOF
+function _setupcli {
+  cat > conf/hbase-site.xml <<EOF
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
   <property>
@@ -54,9 +37,30 @@ EOF
   </property>
 </configuration>
 EOF
-  
-if [[ $1 == "shell" ]]
-then exec hbase shell
-else exec "$@"
-fi
+
+  cat > conf/zoo.cfg <<EOF 
+clientPortAddress=$SERVER_NAME
+server.1=$SERVER_NAME:2182
+EOF
+}
+
+function _start {
+  _setup
+  # Ports: 9090 API and 9095 UI
+  hbase thrift start > logs/hbase-thrift.log 2>&1 &
+
+  # REST server (background)
+  # hbase rest start > $logs_dir/hbase-rest.log 2>&1 &
+
+  exec hbase master start
+}
+
+export -f _help _setup _start
+
+case $1 in
+  --help)  _help;;
+  --start) _start;;
+  shell)   _setupcli; exec hbase shell;;
+  *)       exec $@;;
+esac
 
