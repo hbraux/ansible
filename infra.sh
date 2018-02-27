@@ -8,7 +8,7 @@
 # 2) install Vagrant boxes for CentOS7 and Alpine3.6 
 
 TOOL_NAME=infra
-TOOL_VERS=0.0.2
+TOOL_VERS=0.0.3
 
 
 ###############################################################################
@@ -48,7 +48,7 @@ declare Arguments=
 # -----------------------------------------------------------------------------
 
 # file cheksum, updated when commiting in Git
-_MD5SUM="f2ca7a5492440e412727d07f0a76eec2"
+_MD5SUM="b254e3b5665a2eed04a7a5e1563e0525"
 
 # config file
 declare _CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
@@ -270,7 +270,7 @@ function getGitRepo {
   [[ -n $GitRepo ]] && return
   script=$0
   [ -L $script ] && script=$(readlink $script) 
-  GitRepo=$(cd $(dirname $script)/.. ; pwd)
+  GitRepo=$(dirname $script)
 }
   
 function getDomain {
