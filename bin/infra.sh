@@ -8,7 +8,7 @@
 # 2) install Vagrant boxes for CentOS7 and Alpine3.6 
 
 TOOL_NAME=infra
-TOOL_VERSION=0.1
+TOOL_VERSION=0.0.1
 
 ###############################################################################
 # BEGIN: common.sh 2.0
@@ -46,7 +46,7 @@ declare Arguments=
 # -----------------------------------------------------------------------------
 
 # file cheksum, updated when commiting in Git
-_MD5SUM="d2e3fe7995de5d5790c17b372a3ba84c"
+_MD5SUM="d5e89528a9eba14845e0189576394be6"
 
 # config file
 declare _CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
@@ -595,7 +595,7 @@ function dockerTest {
   dockerBuild
   info "\nTesting --help\n------------------------------------------"
   dockerRun --help || die
-  info "\nStarting server $DockerImg\n------------------------------------------"
+  info "\nStarting $DockerImg\n------------------------------------------"
   dockerRun
   # wating 10 sec. for server to start
   sleep 10
@@ -605,14 +605,14 @@ function dockerTest {
        die "Server failed to start"
   fi
   # execute test file
-  info "\nTesting $DockerImg Server Status\n------------------------------------------"
+  info "\nTesting $DockerImg health\n------------------------------------------"
   DockerTty=0 SERVER_NAME=$DockerImg source $testfile |& tee $TmpFile || die
   grep -q "Exception " $TmpFile
   [[ $? -eq 0 ]] && die 
   # check persistence (volume)
   testfile=$DockerDir/test-volume.sh
   if [[ -f $testfile ]] 
-  then info "\nTesting $DockerImg Server Persistence\n------------------------------------------"
+  then info "\nTesting $DockerImg persistence\n------------------------------------------"
        dockerStop
        sleep 1
        dockerRun
