@@ -10,6 +10,7 @@
 TOOL_NAME=infra
 TOOL_VERSION=0.0.1
 
+
 ###############################################################################
 # BEGIN: common.sh 2.0
 ###############################################################################
@@ -46,7 +47,7 @@ declare Arguments=
 # -----------------------------------------------------------------------------
 
 # file cheksum, updated when commiting in Git
-_MD5SUM="d5e89528a9eba14845e0189576394be6"
+_MD5SUM="0a1818a87b53c3cb33f7cc968d922eaf"
 
 # config file
 declare _CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
