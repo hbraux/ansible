@@ -1,9 +1,8 @@
 #!/bin/bash
 
-echo "$SERVER_INFO"
-
 function _help {
- echo "Variables:
+ echo "$SERVER_INFO
+Variables:
   LOGSTASH_INPUT   : input plugin conf, 'tcp/json' by default
   LOGSTASH_OUTPUT  : output plugin conf, 'elasticsearch' by default
   LOGSTASH_FILTER  : filter plugin conf, none by default

@@ -1,9 +1,8 @@
 #!/bin/bash
 
-echo "$SERVER_INFO"
-
 function _help {
-echo "Commands in interactive mode (examples):
+echo "$SERVER_INFO
+Commands in interactive mode (examples):
   kafka-topics.sh --zookeeper $SERVER_NAME:2181 --create --topic topic.test --partitions 1 --replication-factor 1
   kafka-console-producer.sh --broker-list $SERVER_NAME:9092 --topic topic.test
   kafka-console-consumer.sh --bootstrap-server $SERVER_NAME:9092 --topic topic.test --from-beginning

@@ -23,13 +23,16 @@ WORKDIR /opt/hbase
 
 USER hbase
 
-#  Thrift API and Web UI at :9095/thrift.jsp
-EXPOSE 9090 9095 
+# Thrift API  (do not expose UI port 9095)
+EXPOSE 9090/TCP
 
-# Zookeeper, using 2182 to not conflict with Kafka
+# Zookeeper (using 2182 to not conflict with Kafka)
 EXPOSE 2182   
 
-# Master web UI (and publish)
+# Rest API (using custom port 8084 instead of 8080, and do not expose UI port 8085)
+EXPOSE 8084/TCP
+
+# Master web UI 
 EXPOSE 16010/TCP
 
 VOLUME /opt/hbase/data

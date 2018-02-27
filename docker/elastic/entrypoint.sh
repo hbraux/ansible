@@ -1,9 +1,8 @@
 #!/bin/bash
 
-echo "$SERVER_INFO"
-
 function _help {
-  echo "Commands in interactive mode (examples):
+  echo "$SERVER_INFO
+Commands in interactive mode (examples):
   curl -s -XGET http://$SERVER_NAME:9200
 "
 }

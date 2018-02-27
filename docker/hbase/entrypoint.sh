@@ -1,9 +1,8 @@
 #!/bin/bash
 
-echo "$SERVER_INFO"
-
 function _help {
- echo "Commands in interactive mode
+ echo "$SERVER_INFO
+Commands in interactive mode
   shell : hbase shell
 "
 }
@@ -17,6 +16,10 @@ function _setup {
   <property>
     <name>hbase.rootdir</name>
     <value>file:////opt/hbase/data</value>
+  </property>
+  <property>
+    <name>hbase.rest.port</name>
+    <value>8084</value>
   </property>
 </configuration>
 EOF
@@ -46,11 +49,11 @@ EOF
 
 function _start {
   _setup
-  # Ports: 9090 API and 9095 UI
+  # Thrift Server 
   hbase thrift start > logs/hbase-thrift.log 2>&1 &
 
-  # REST server (background)
-  # hbase rest start > $logs_dir/hbase-rest.log 2>&1 &
+  # REST server
+  hbase rest start > logs/hbase-rest.log 2>&1 &
 
   exec hbase master start
 }
