@@ -8,12 +8,13 @@
 # 2) install Vagrant boxes for CentOS7 and Alpine3.6 
 
 TOOL_NAME=infra
-TOOL_VERSION=0.0.1
+TOOL_VERS=0.0.2
 
 
 ###############################################################################
-# BEGIN: common.sh 2.0
+# BEGIN: common.sh 2.1
 ###############################################################################
+# Warning versions 2.x are not compatible with 1.x
 
 [[ -n $TOOL_NAME ]] || TOOL_NAME=${0/.sh/}
 
@@ -47,7 +48,7 @@ declare Arguments=
 # -----------------------------------------------------------------------------
 
 # file cheksum, updated when commiting in Git
-_MD5SUM="0a1818a87b53c3cb33f7cc968d922eaf"
+_MD5SUM="f2ca7a5492440e412727d07f0a76eec2"
 
 # config file
 declare _CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
@@ -155,7 +156,7 @@ function _about {
   suffix=""
   [[ $(egrep -v '^_MD5SUM=' $0 | /usr/bin/md5sum | sed 's/ .*//') \
       != $_MD5SUM ]] && suffix=".draft"
-  echo "# $TOOL_NAME $TOOL_VERSION$suffix"
+  echo "# $TOOL_NAME $TOOL_VERS$suffix"
 }
 
 # -----------------------------------------------------------------------------
@@ -164,7 +165,9 @@ function _about {
 
 # opt X check if option -X was set (return 0 if true) 
 function opt {
-  [[ -n ${_Opts[${1}]} ]] || die "(code) missing option -$1 in init"
+  if [[ -z ${_Opts[${1}]} ]]
+  then echo -e "${RED}CODE ERROR: missing option -$1 in init${BLACK}"; exit 1
+  fi
   [[ ${_Opts[${1}]} -eq 1 ]] || return 1
 }
 
@@ -173,11 +176,11 @@ function opt {
 # the first arguments are supported options, the second $@ 
 function init {
   _about
-  _loadcfg
   if [[ ${1:0:1} == - ]]
   then _setopts ${1:1} ; shift
   fi
   [[ $# -eq 0 ]] && usage
+  _loadcfg
   cmdline=$@
   Command=$1
   shift
