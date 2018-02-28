@@ -370,7 +370,7 @@ function uploadVagrantFile {
 }
 
 function vagrantCheck {
-  [[ -n $DEPLOY_VAGRANT ]] || DEPLOY_VAGRANT="E:/Vagrant"
+  [[ -n $DEPLOY_VAGRANT ]] || DEPLOY_VAGRANT="C:/Vagrant"
   sftp $HostIp:/id_rsa.pub id_rsa.tmp 1>/dev/null 2>&1
   if [ $? -ne 0 ]
   then info "Uploading id_rsa.pub to $VAGRANT_PROVIDER host"
@@ -438,7 +438,7 @@ function destroy {
 function infraStatus {
   getDomain
   opt f && refreshVagrant
-  [[ -f $VagrantStatus ]] || refreshVagrant
+  [[ ! -s $VagrantStatus ]] && refreshVagrant
   info "Servers Status"
   for serv in $(cat $VagrantStatus | awk '{print $2}')
   do getVagrantId $serv

@@ -14,7 +14,8 @@ function _setup {
 
 function _start {
   _setup
-  exec mongod --bind_ip 0.0.0.0
+  java -Dfile.encoding=UTF-8 -server -jar /opt/restheart.jar --fork
+  exec mongod 
 }
 
 export -f _help _setup _start

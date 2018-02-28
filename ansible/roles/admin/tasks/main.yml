@@ -51,8 +51,8 @@
   become: true
 
 - name: update profile
-  path: /home/{{ admin.user }}/.bash_profile
-  block: |
-    [ -d env.d ] && for f in env.d/*.sh; do echo sourcing $f; . $f ;done
-    [ -d site.d ] && for f in site.d/*.sh; do echo sourcing $f; . $f ;done
-
+  blockinfile:
+    path: /home/{{ admin.user }}/.bash_profile
+    block: |
+      [ -d env.d ] && for f in env.d/*.sh; do echo sourcing $f; . $f ;done
+      [ -d site.d ] && for f in site.d/*.sh; do echo sourcing $f; . $f ;done
