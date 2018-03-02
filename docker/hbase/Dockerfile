@@ -23,17 +23,17 @@ WORKDIR /opt/hbase
 
 USER hbase
 
-# Thrift API  (do not expose UI port 9095)
-EXPOSE 9090/TCP
+# Thrift API  (do not expose UI port 9095) 9090->9090
+# EXPOSE 9090
 
 # Zookeeper (using 2182 to not conflict with Kafka)
 EXPOSE 2182   
 
-# Rest API (using custom port 8084 instead of 8080, and do not expose UI port 8085)
-EXPOSE 8084/TCP
+# Rest API 8080->8081
+# EXPOSE 8080
 
-# Master web UI 
-EXPOSE 16010/TCP
+# Master web UI  16010->16010
+EXPOSE 16010
 
 VOLUME /opt/hbase/data
 

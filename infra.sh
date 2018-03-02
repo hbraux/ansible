@@ -469,7 +469,7 @@ function startServer {
 # small helper to display the docker command being run
 function _docker {
   info "\$ docker $*"
-  docker $* 
+  docker $*
 }
 
 function dockerCheck {
@@ -519,7 +519,12 @@ function dockerBuild {
   fi
   tags="-t $DockerImg:latest"
   [[ -n $vers ]] && tags="$tags -t $DockerImg:$vers"
-  _docker build $tags --build-arg http_proxy=$Proxy $DockerDir 
+
+  buildargs="--build-arg http_proxy=$Proxy"
+  for arg in $(egrep "^ARG " $DockerDir/Dockerfile | sed 's/ARG \([A-Z_]*\)=.*/\1/') 
+  do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
+  done
+  _docker build $tags $buildargs $DockerDir 
   _docker images | grep -v " latest "
 }
 
@@ -540,8 +545,9 @@ function dockerRun {
        opts="-d --name=$DockerImg --network=$DOCKER_NETWORK"
        volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
        [[ -n $volume ]] && opts="$opts --mount source=${DockerImg}-data,target=$volume"
-       for port in $(egrep '^EXPOSE .*/TCP' $DockerDir/Dockerfile | sed 's~EXPOSE \([0-9]\+\)/TCP~\1~')
-       do  opts="$opts -p $port:$port"
+       for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | awk '{print $2}')
+       do  hport=$(sed  -n "s/^#.*$port->\([0-9]*\)/\1/p" $DockerDir/Dockerfile) 
+	   [[ -n $hport ]] && opts="$opts -p $hport:$port"
        done
        for e in $(env |egrep "^${DockerImg^^}_")
        do opts="$opts -e $e"
@@ -579,8 +585,15 @@ function dockerRm {
 
 function dockerStatus {
   dockerCheck
-  _docker images
-  _docker ps -a
+  opt v 
+  if [[ $? -eq 0 ]]
+  then _docker images
+       _docker ps -a
+  else info "$ docker images .."
+       docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
+       info "$ docker ps .."
+       docker ps -a  --format 'table{{.Image}}:{{.Names}}\t{{.ID}}\t{{.Status}}'
+  fi
   _docker volume ls
 }
 
@@ -590,6 +603,9 @@ function dockerClean {
   for vol in $(docker volume ls -q)
   do grep -q "[0-9a-f]\{64\}" <<<$vol && _docker volume rm $vol
   done
+  _docker rmi -f $(docker images -f "dangling=true" -q)
+  echo
+  dockerStatus
 }
 
 function dockerTest {

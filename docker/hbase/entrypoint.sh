@@ -2,6 +2,10 @@
 
 function _help {
  echo "$SERVER_INFO
+Variables:
+  HBASE_ENABLE_REST   : to enable REST API (set to 1)
+  HBASE_ENABLE_THRIFT : to enable THRIFT API
+
 Commands in interactive mode
   shell : hbase shell
 "
@@ -49,12 +53,8 @@ EOF
 
 function _start {
   _setup
-  # Thrift Server 
-  hbase thrift start > logs/hbase-thrift.log 2>&1 &
-
-  # REST server
-  hbase rest start > logs/hbase-rest.log 2>&1 &
-
+  [[ $HBASE_ENABLE_THRIFT == 1 ]] && hbase thrift start >logs/thrift.log 2>&1 &
+  [[ $HBASE_ENABLE_REST == 1 ]] && $hbase rest start > logs/rest.log 2>&1 &
   exec hbase master start
 }
 
