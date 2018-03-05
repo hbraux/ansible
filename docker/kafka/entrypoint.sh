@@ -1,13 +1,26 @@
 #!/bin/bash
 
 function _help {
-echo "$SERVER_INFO
-Commands in interactive mode (examples):
-  kafka-topics.sh --zookeeper $SERVER_NAME:2181 --create --topic topic.test --partitions 1 --replication-factor 1
-  kafka-console-producer.sh --broker-list $SERVER_NAME:9092 --topic topic.test
-  kafka-console-consumer.sh --bootstrap-server $SERVER_NAME:9092 --topic topic.test --from-beginning
-  kafka-json.sh $SERVER_NAME:9092 topic.test uuid:%uuid date=%now val=%rands
+echo "$IMAGE_INFO
 
+Prerequisite: create a Used Defined Network for server Name resolution; example
+  docker network create --driver bridge udn
+
+Start server (no persistence)
+  docker run -d --name=kafka --network=udn kafka start
+
+Create a topic:
+  docker run  -it --rm --network=udn kafka kafka-topics.sh --zookeeper kafka:2181 --create --topic topic.test --partitions 1 --replication-factor 1
+
+Generate messages: 
+  docker run  -it --rm --network=udn kafka kafka-console-producer.sh --broker-list kafka:9092 --topic topic.test
+  docker run  -it --rm --network=udn kafka kafka-json.sh kafka:9092 topic.test uuid:%uuid date=%now val=%rands
+
+Consume messages;
+  docker run  -it --rm --network=udn kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic topic.test --from-beginning
+
+Stop server
+  docker stop kafka && docker rm kafka
 "
 }
 
@@ -16,6 +29,7 @@ function _setup {
   sed -r -i 's~^log.dirs=.*~log.dirs=/kafka/kafka-logs~' config/server.properties
   touch .setup
 }
+export -f _setup # testing purpose
 
 function _setupold {
   for var in `env | egrep '^KAFKA' | grep -v 'KAFKA_VERSION'`
@@ -37,11 +51,11 @@ function _start {
   exec bin/kafka-server-start.sh config/server.properties
 }
 
-export -f _help _setup _start
+
 
 case $1 in
-  --help)  _help;;
-  --start) _start;;
-  *)       exec $@;;
+  help)  _help;;
+  start) _start;;
+  *)     exec $@;;
 esac
 

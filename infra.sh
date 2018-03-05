@@ -204,7 +204,7 @@ VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
 DEFAULT_OS=centos/7
-DOCKER_NETWORK=udn  # user defined network to use DNS
+DOCKER_NETWORK=${DOCKER_NETWORK:-udn}  # for DNS purpose
 
 # ------------------------------------------
 # Global variables
@@ -251,7 +251,7 @@ commands:
 
  dock              : docker status (images, containers,.)
  build   <image>   : build a docker image
- [run]   <image>...: run a docker image (run is optional). Add --help for info
+ [run]   <image>...: run a docker image (run is optional). Add 'help' for info
  stop    <image>   : stop a docker image
  rm      <image>   : remove a docker container (stop it if needed)
  test    <image>   : test a docker image
@@ -279,7 +279,11 @@ function getDomain {
 }
 
 function getProxy {
-  [[ -n $PROXY_SQUID ]] && Proxy=http://$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}  
+  [[ -n $Proxy ]] && return
+  if [[ -n $PROXY_SQUID ]] 
+  then Proxy=http://$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}  
+  else [[ -n $PROXY_SQUID ]] && Proxy=http://$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}
+  fi
   Proxy=${Proxy:-$http_proxy}
 }
 
@@ -347,7 +351,7 @@ function setupEnv {
 
 function uploadVagrantFile {
   info "Creating VagrantFile for server type $ServerType"
-  ServerIP=$(grep $ServerType /etc/hosts | sed 's/[0-9] .*//' |head -1)
+  ServerIP=$(grep "[0-9\.]* $ServerType" /etc/hosts | sed 's/[0-9] .*//' |head -1)
   ServerMemory=$(grep $ServerType $HostFile |grep 'mem=' | sed 's/.*mem=//' | awk '{print $1}')
   [[ -n $ServerMemory ]] || ServerMemory=$DEFAULT_MEMORY
   ServerCpu=$(grep $ServerType $HostFile |grep 'cpu=' | sed 's/.*cpu=//' | awk '{print $1}')
@@ -531,6 +535,7 @@ function dockerBuild {
 
 
 function dockerRun {
+  args=$*
   if [[ $# -eq 0 && $DockerImg != bash && $DockerImg != python ]]
   then # server mode
       id=$(docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
@@ -552,11 +557,12 @@ function dockerRun {
        for e in $(env |egrep "^${DockerImg^^}_")
        do opts="$opts -e $e"
        done
+       args=start
   else # command mode
        opts="-i --rm --network=$DOCKER_NETWORK"
      [[ $DockerTty -eq 1 ]] && opts="-t $opts"       
   fi
-  _docker run $opts $DockerImg $*
+  _docker run $opts $DockerImg $args
 }
 
 function dockerStop {
@@ -603,7 +609,8 @@ function dockerClean {
   for vol in $(docker volume ls -q)
   do grep -q "[0-9a-f]\{64\}" <<<$vol && _docker volume rm $vol
   done
-  _docker rmi -f $(docker images -f "dangling=true" -q)
+  ids=$(docker images -f "dangling=true" -q)
+  [[ -n $ids ]] && _docker rmi -f $ids
   echo
   dockerStatus
 }
@@ -613,8 +620,8 @@ function dockerTest {
   [[ -f $testfile ]] || die "No file $testfile"
   dockerRm 
   dockerBuild
-  info "\nTesting --help\n------------------------------------------"
-  dockerRun --help || die
+  info "\nTesting help\n------------------------------------------"
+  dockerRun help || die
   info "\nStarting $DockerImg\n------------------------------------------"
   dockerRun
   # wating 10 sec. for server to start
@@ -626,7 +633,7 @@ function dockerTest {
   fi
   # execute test file
   info "\nTesting $DockerImg health\n------------------------------------------"
-  DockerTty=0 SERVER_NAME=$DockerImg source $testfile |& tee $TmpFile || die
+  DockerTty=0 source $testfile |& tee $TmpFile || die
   grep -q "Exception " $TmpFile
   [[ $? -eq 0 ]] && die 
   # check persistence (volume)
@@ -637,7 +644,7 @@ function dockerTest {
        sleep 1
        dockerRun
        sleep 5
-       DockerTty=0 SERVER_NAME=$DockerImg source $testfile  || die
+       DockerTty=0 source $testfile  || die
   fi
   dockerRm
   info "\nTESTING OK"

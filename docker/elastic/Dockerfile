@@ -1,6 +1,6 @@
 FROM jdk:8
 
-ARG ELASTIC_URL=http://artifacts.elastic.co/downloads/elasticsearch
+ARG URL_ELASTIC=http://artifacts.elastic.co/downloads/elasticsearch
 
 ENV ELASTICSEARCH_VERSION 5.6.6
 
@@ -8,7 +8,7 @@ ENV SERVER_INFO Elasticsearch ${ELASTICSEARCH_VERSION} Development Server
 ENV SERVER_NAME elastic
 
 RUN set -x && mkdir -p /opt \
-    && curl -s ${ELASTIC_URL}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz | tar xzf - -C /opt \ 
+    && curl -s ${URL_ELASTIC}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz | tar xzf - -C /opt \ 
     && mv /opt/elasticsearch-${ELASTICSEARCH_VERSION} /opt/elasticsearch \
     && adduser -DH -s /sbin/nologin elastic \
     && mkdir -p /opt/elasticsearch/data \

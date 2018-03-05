@@ -1,2 +1,4 @@
 [Service]
-Environment="HTTP_PROXY=http://{{ global.localhost.proxy }}"
+Environment="HTTP_PROXY={{ global.proxyenv.http_proxy }}"
+Environment="HTTPS_PROXY={{ global.proxyenv.http_proxy }}"
+

@@ -1,11 +1,29 @@
 # proxy handling
 
-# those variables shall be set ahead 
-export NO_PROXY=${NO_PROXY:-localhost}
-export PROXY_HOST=${PROXY_HOST:-localhost}
+# ------------------------------------------
+# Environment variables (to set in env.LOCAL.sh)
+# ------------------------------------------
+
+# company proxy server (mandatory)
+export PROXY_HOST
+
+# Squid proxy (optional)
+export PROXY_SQUID
+
+# proxy port (optional)
 export PROXY_PORT=${PROXY_PORT:-3128}
+
+# No proxy (optional)
+export NO_PROXY=${NO_PROXY:-localhost}
+
+# Proxy authentication hosts and string (optional)
 export PROXY_AUTH_HOSTS
 export PROXY_AUTH_STR
+
+
+# ------------------------------------------
+# local env tools
+# ------------------------------------------
 
 function _proxy_auth {
   [[ -n $PROXY_AUTH_HOSTS ]] || return
@@ -55,6 +73,10 @@ function _proxy_test {
   echo "HTTP code 200 must be returned ..."
   curl -si -m2 http://www.google.fr | head -1
 }
+
+# ------------------------------------------
+# local env tools
+# ------------------------------------------
 
 function proxy {
   if [[ $# -eq 0 ]]

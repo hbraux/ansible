@@ -49,7 +49,7 @@ admin1.hostonly.com
 oracle1.hostonly.com cpu=2 mem=2048
 
 [docker]
-docker1.hostonly.com cpu=2 mem=2048 os=alpine/3.6
+docker1.hostonly.com cpu=4 mem=4096 
 
 [cassandra]
 cassandra1.hostonly.com

@@ -1,19 +1,18 @@
 FROM jdk:8
 
-ARG RESTHEART_URL=https://github.com/SoftInstigate/restheart/releases/download/3.2.2
+ARG URL_RESTHEART=https://github.com/SoftInstigate/restheart/releases/download/3.2.2
 
 ENV MONGO_VERSION 3.4.10
-ENV SERVER_INFO Mongo ${MONGO_VERSION} Development Server with RestHeart
-ENV SERVER_NAME mongo
+ENV IMAGE_INFO Mongo ${MONGO_VERSION} Development Server with RestHeart
 
 ENV RESTHEART_VERSION 3.2.2
 
 RUN set -x && mkdir -p /opt && mkdir -p /data/db \
     && apk add --no-cache mongodb \
-    && curl -s ${RESTHEART_URL}/restheart-${RESTHEART_VERSION}.tar.gz | tar xzf - -C /opt \
+    && curl -s ${URL_RESTHEART}/restheart-${RESTHEART_VERSION}.tar.gz | tar xzf - -C /opt \
     && mv /opt/restheart-${RESTHEART_VERSION} /opt/restheart \
     && chown -R mongodb /opt/restheart /data/db \
-    # useless
+    # remove that big file
     && rm -f /usr/bin/mongoperf 
 
 COPY entrypoint.sh /
@@ -28,5 +27,4 @@ EXPOSE 8080
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-
-CMD [ "--start"]
+CMD [ "help"]

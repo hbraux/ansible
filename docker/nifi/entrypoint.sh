@@ -9,14 +9,14 @@ echo "$SERVER_INFO
 
 function _setup {
   [[ -f .setup ]] && return
-
+  sed (i -e "s/nifi.web.http.host=/nifi.web.http.host=xx/" conf/nifi.properties
   touch .setup
 }
 
 
 function _start {
   _setup
-  exec scripts/start.sh
+  exec bin/nifi.sh run
 }
 
 export -f _help _setup _start

@@ -1,3 +1,19 @@
+- name:  create systemd script to disable THP (transparent hugepages)
+  template:
+    src: disable-thp.service.j2
+    dest: /etc/systemd/system/disable-thp.service
+  become: true
+
+- name: install / start services
+  service: name=disable-thp state=started enabled=yes
+  become: true
+
+- name: fix Kernel settings for docker
+  template:
+    src: 01-docker.conf.j2
+    dest: /etc/sysctl.d/01-docker.conf
+  become: true
+
 - name: add Docker CE repository
   get_url:
     url: https://download.docker.com/linux/centos/docker-ce.repo
@@ -11,6 +27,26 @@
   environment: "{{ global.proxyenv }}"
   become: true
 
+- name: install docker-compose
+  get_url:
+    url: "{{ dockercompose.url  }}"
+    dest: /usr/bin/docker-compose
+    mode: 0755
+  environment: "{{ global.proxyenv }}"
+  become: true
+
+- name : copy docker binary to localhost
+  fetch:
+    src: /usr/bin/docker
+    dest: "{{ lookup('env','HOME') }}/bin/"
+    flat: yes
+
+- name : copy docker-compose binary to localhost
+  fetch:
+    src: /usr/bin/docker-compose
+    dest: "{{ lookup('env','HOME') }}/bin/"
+    flat: yes
+
 - name: create directory /etc/systemd/system/docker.service.d
   file:
     path: /etc/systemd/system/docker.service.d
@@ -23,6 +59,12 @@
     dest: /etc/systemd/system/docker.service.d/http-proxy.conf
   become: true
 
+- name: create directory /etc/docker
+  file:
+    path: /etc/docker
+    state: directory
+  become: true
+
 - name: configure TCP port
   template:
     src: daemon.json.j2
@@ -32,3 +74,7 @@
 - name: start docker services
   service: name=docker state=started enabled=yes
   become: true
+
+- name: PLEASE RESTART SERVER AFTER DEPLOYMENT!
+  set_fact:
+    dummy: 1

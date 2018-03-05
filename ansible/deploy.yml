@@ -1,4 +1,4 @@
-- hosts: all:!docker
+- hosts: all
   roles:
     - network
 
@@ -61,6 +61,5 @@
     - oracle-db
 
 - hosts: docker
-  gather_facts: no
   roles:
     - docker

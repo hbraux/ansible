@@ -1,3 +1,3 @@
-dockerRun $DOCKER_IMG kafka-console-consumer.sh --bootstrap-server $SERVER_NAME:9092 --topic topic.test --from-beginning --max-messages 1
+dockerRun kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic topic.test --from-beginning --max-messages 1
 
 

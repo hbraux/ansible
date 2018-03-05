@@ -1,15 +1,27 @@
 #!/bin/bash
 
 function _help {
-  echo "$SERVER_INFO
-Commands in interactive mode (examples):
-  shell : mongo shell
+  echo "$IMAGE_INFO
+
+Prerequisite: create a Used Defined Network for server Name resolution; example
+  docker network create --driver bridge udn
+
+Start server (no persistence)
+  docker run -d --name=mongo --network=udn -p 8080:8080 mongo start
+
+Mongo shell:
+  docker run -it --rm --network=udn mongo shell
+
+Rest API
+  http://<docker_host>:8080/
+
+Stop server
+  docker stop mongo && docker rm mongo
 "
 }
 
 function _setup {
   [[ -f .setup ]] && return
-
   touch .setup
 }
 
@@ -19,13 +31,11 @@ function _start {
   exec mongod 
 }
 
-export -f _help _setup _start
-
 case $1 in
-  --help)  _help;;
-  --start) _start;;
-  shell)   exec mongo --host mongo;;
-  *)       exec $@;;
+  help)   _help;;
+  start)  _start;;
+  shell)  exec mongo --host mongo;;
+  *)      exec $@;;
 esac
 
 
