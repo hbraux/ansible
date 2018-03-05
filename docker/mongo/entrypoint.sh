@@ -22,6 +22,7 @@ Stop server
 
 function _setup {
   [[ -f .setup ]] && return
+  # noting to setup for Mongo DB
   touch .setup
 }
 

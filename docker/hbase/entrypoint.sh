@@ -2,12 +2,26 @@
 
 function _help {
  echo "$SERVER_INFO
-Variables:
-  HBASE_ENABLE_REST   : to enable REST API (set to 1)
-  HBASE_ENABLE_THRIFT : to enable THRIFT API
 
-Commands in interactive mode
-  shell : hbase shell
+Prerequisite: create a Used Defined Network for server Name resolution; example
+  docker network create --driver bridge udn
+
+Start server (no persistence)
+  docker run -d --name=hbase --network=udn -p 8080:8080 -p 16010:16010 hbase start
+
+To use Thrift API instead of REST API run: hbase start --thrift
+
+HBase shell
+  docker run  -it --rm --network=udn hbase shell
+
+Rest API
+  http://<docker_host>:8080/
+
+HBase UI
+  http://<docker_host>:16010/
+
+Stop server
+  docker stop hbase && docker rm hbase
 "
 }
 
@@ -21,18 +35,11 @@ function _setup {
     <name>hbase.rootdir</name>
     <value>file:////opt/hbase/data</value>
   </property>
-  <property>
-    <name>hbase.rest.port</name>
-    <value>8084</value>
-  </property>
 </configuration>
 EOF
-  cat > conf/zoo.cfg <<EOF
-clientPort=2182
-EOF
-  
   touch .setup
 }
+export -f _help # testing purpose
 
 function _setupcli {
   cat > conf/hbase-site.xml <<EOF
@@ -40,29 +47,26 @@ function _setupcli {
 <configuration>
   <property>
      <name>hbase.zookeeper.quorum</name>
-     <value>$SERVER_NAME</value>
+     <value>hbase</value>
   </property>
 </configuration>
-EOF
-
-  cat > conf/zoo.cfg <<EOF 
-clientPortAddress=$SERVER_NAME
-server.1=$SERVER_NAME:2182
 EOF
 }
 
 function _start {
   _setup
-  [[ $HBASE_ENABLE_THRIFT == 1 ]] && hbase thrift start >logs/thrift.log 2>&1 &
-  [[ $HBASE_ENABLE_REST == 1 ]] && $hbase rest start > logs/rest.log 2>&1 &
+  if [[ $1 == -thrift ]]
+  then hbase thrift start >logs/hbase-thrift.log 2>&1 &
+  else hbase rest start > logs/hbase-rest.log 2>&1 &
+  fi
   exec hbase master start
 }
 
-export -f _help _setup _start
+
 
 case $1 in
-  --help)  _help;;
-  --start) _start;;
+  help)  _help;;
+  start) _start $2;;
   shell)   _setupcli; exec hbase shell;;
   *)       exec $@;;
 esac

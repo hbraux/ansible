@@ -1,9 +1,17 @@
 #!/bin/bash
 
 function _help {
-  echo "$SERVER_INFO
-Commands in interactive mode (examples):
-  curl -s -XGET http://$SERVER_NAME:9200
+  echo "$IMAGE_INFO
+
+Start server (no persistence)
+  docker run -d --name=elastic -p 9200:9200 elastic start
+
+Rest API
+  http://<docker_host>:9200/
+
+Stop server
+  docker stop elastic && docker rm elastic
+
 "
 }
 
@@ -15,6 +23,7 @@ function _setup {
   echo "network.host: [_eth0_]" >> config/elasticsearch.yml
   touch .setup
 }
+export -f _setup # testing
 
 function _start {
   _setup
@@ -23,11 +32,10 @@ function _start {
   exec elasticsearch
 }
 
-export -f _help _setup _start
 
 case $1 in
-  --help)  _help;;
-  --start) _start;;
+  help)  _help;;
+  start) _start;;
   *)       exec $@;;
 esac
 

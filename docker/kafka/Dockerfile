@@ -1,7 +1,6 @@
 FROM jdk:8
 
-# using local Apache mirror
-ARG MIRROR=apache.crihan.fr
+ARG URL_APACHE=http://apache.crihan.fr/dist
 
 
 ENV KAFKA_VERSION 0.10.2.1 
@@ -10,7 +9,7 @@ ENV SCALA_VERSION 2.10
 ENV IMAGE_INFO Kafka ${KAFKA_VERSION} development server
 
 RUN set -x && mkdir -p /opt && mkdir -p /kafka  \
-    && curl -s http://${MIRROR}/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz | tar xzf - -C /opt \
+    && curl -s ${URL_APACHE}/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz | tar xzf - -C /opt \
     && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
     && rm -fr /opt/kafka/site-docs \
     && adduser -D -s /sbin/nologin kafka \

@@ -1,22 +1,26 @@
 FROM jdk:8
 
-# using local Apache mirror
-ARG URL_NIFI=http://apache.crihan.fr/dist/nifi/
+ARG URL_APACHE=http://apache.crihan.fr/dist
 
-# only include those NARS (Nifi Archives), must den with ,
-ARG NIFI_NARS="framework,scripting,jetty-bundle,provenance-repository,websocket-services-jetty,elasticsearch-5,hbase,hbase_1_1_2-client-service,kafka-1-0,mongodb,mongodb-services,update-attribute,"
+# Extra Nifi Archives (connectors)
+ARG EXTRA_NIFI_NARS=elasticsearch-5,hbase,hbase_1_1_2-client-service,kafka-1-0,mongodb
+
+# Core Nifi Archives (mandatory components and must have processors)
+ENV CORE_NIFI_NARS framework,provenance-repository,jetty-bundle-1.5.0.nar,standard,standard-services-api,ssl-context-service,enrich,record-serialization-services,update-attribute
 
 ENV NIFI_VERSION 1.5.0
 
-ENV SERVER_NAME nifi
-ENV SERVER_INFO Nifi ${NIFI_VERSION} development server 
+ENV IMAGE_INFO Nifi ${NIFI_VERSION} development server 
 
 RUN set -x && mkdir -p /opt \
-    && curl -s ${URL_NIFI}/${NIFI_VERSION}/nifi-${NIFI_VERSION}-bin.tar.gz | tar xzf - -C /opt \
+    && curl -s ${URL_APACHE}/nifi/${NIFI_VERSION}/nifi-${NIFI_VERSION}-bin.tar.gz | tar xzf - -C /opt \
     && mv /opt/nifi-${NIFI_VERSION} /opt/nifi \
     && adduser -D -s /sbin/nologin nifi \
+    && mkdir -p /opt/nifi/data \ 
     && chown -R nifi: /opt/nifi \
-    && set +x && for f in $(find /opt/nifi/lib -name "*.nar"); do l=${f:19}; echo $NIFI_NARS | grep -q "${l%-nar*}," || mv $f $f.unused ; done
+    # cleanup to reduce image size
+    && rm -r /opt/nifi/docs \
+    && set +x && for f in $(find /opt/nifi/lib -name "*.nar" | sort); do l=${f:19} ; echo "${CORE_NIFI_NARS},${EXTRA_NIFI_NARS}," | grep -q "${l%-nar*}," || rm -v $f ; done 
 
 COPY entrypoint.sh /
 
@@ -25,12 +29,11 @@ WORKDIR /opt/nifi
 
 USER nifi
 
-# publish port on docker host 8080->8080
 EXPOSE 8080
 
-# VOLUME /nifi
+VOLUME /opt/nifi/data
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["--start"]
+CMD ["help"]
 
 

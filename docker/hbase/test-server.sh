@@ -8,7 +8,7 @@ put 'test_ns:test_table','1234','C:e','eee'
 EOF
 
 # check Master web UI
-curl -s http://$DOCKER_HOST:16010/master-status | grep test_ns:test_table
+curl -s http://hbase:16010/master-status | grep test_ns:test_table
 
 # Check Rest API
-curl -s http://$DOCKER_HOST:8084/test_ns:test_table/1234/C:a
+curl -s http://$DOCKER_HOST:8080/test_ns:test_table/1234/C:a

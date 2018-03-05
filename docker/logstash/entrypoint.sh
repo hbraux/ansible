@@ -1,16 +1,27 @@
 #!/bin/bash
 
 function _help {
- echo "$SERVER_INFO
-Variables:
+ echo "$IMAGE_INFO
+
+Prerequisites:
+1/ create a Used Defined Network for server Name resolution; example
+     docker network create --driver bridge udn
+2/ start Elastic container
+3/ optionaly set environment Variables
   LOGSTASH_INPUT   : input plugin conf, 'tcp/json' by default
   LOGSTASH_OUTPUT  : output plugin conf, 'elasticsearch' by default
   LOGSTASH_FILTER  : filter plugin conf, none by default
   LOGSTASH_ESHOST  : elasticsearch host, 'elastic:9200' by default
   LOGSTASH_ESINDEX : elasticsearch index, 'logstash' by default
 
-Commands in interactive mode
-  shell : Logstash interactive Ruby shell
+Start server
+  docker run -d --name=logstash --network=udn logstash start
+
+Start server in interactive mode (ruby shell)
+  docker run -it --rm --network=udn logstash shell
+
+Stop server
+  docker stop logstash && docker rm logstash
 "
 }
 
@@ -30,17 +41,17 @@ function _setup {
   
   touch .setup
 }
+export -f _setup # debug
 
 function _start {
   _setup
   exec logstash -f data/logstash.conf
 }
 
-export -f _help _setup _start
 
 case $1 in
-  --help)  _help;;
-  --start) _start;;
+  help)  _help;;
+  start) _start;;
   shell)   exec bin/logstash -i irb;;
   *)       exec "$@"
 esac

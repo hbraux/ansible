@@ -22,8 +22,8 @@ WORKDIR /opt/restheart
 
 VOLUME /data/db
 
-# Restheart  port 8080->8081
-EXPOSE 8080
+# Mongo and Restheart Port
+EXPOSE 27017 8080
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 

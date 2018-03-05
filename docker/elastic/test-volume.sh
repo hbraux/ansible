@@ -1,3 +1,2 @@
-sleep 20
-dockerRun curl -s  http://elastic:9200/test_index
+dockerRun curl -s  http://$DOCKER_HOST:9200/test_index
 

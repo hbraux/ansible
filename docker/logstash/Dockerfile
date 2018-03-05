@@ -1,16 +1,13 @@
 FROM jdk:8
 
+ARG URL_ELASTIC=http://artifacts.elastic.co/downloads
+
 ENV LOGSTASH_VERSION 5.6.6
-# squid does not handle dynamic content so using my site
-ENV LOGSTASH_TARBALL http://164.132.225.18/~harold/logstash-5.6.6.tar.gz 
-#ENV LOGSTASH_TARBALL http://artifacts.elastic.co/downloads/logstash/logstash-${LOGSTASH_VERSION}.tar.gz
 
-
-ENV SERVER_INFO Logstash ${LOGSTASH_VERSION} Development Server 
-ENV SERVER_NAME logstash
+ENV IMAGE_INFO Logstash ${LOGSTASH_VERSION} Development Server 
 
 RUN set -x && mkdir -p /opt \
-    && curl -s ${LOGSTASH_TARBALL} | tar xzf - -C /opt \ 
+    && curl -s ${URL_ELASTIC}/logstash/logstash-${LOGSTASH_VERSION}.tar.gz | tar xzf - -C /opt \ 
     && mv /opt/logstash-${LOGSTASH_VERSION} /opt/logstash \
     && adduser -DH -s /sbin/nologin logstash \
     && mkdir -p /opt/logstash/data  \
@@ -24,9 +21,6 @@ WORKDIR /opt/logstash
 
 USER logstash
 
-# Node API 
-EXPOSE 9600
-
 # Input plugins
 EXPOSE 5000 5001
 
@@ -35,6 +29,6 @@ EXPOSE 5000 5001
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["--start"]
+CMD ["help"]
 
 

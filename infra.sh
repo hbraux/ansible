@@ -207,6 +207,11 @@ DEFAULT_OS=centos/7
 DOCKER_NETWORK=${DOCKER_NETWORK:-udn}  # for DNS purpose
 
 # ------------------------------------------
+# Parameters (loaded from Config file)
+# ------------------------------------------
+DOCKER_PORTS_="server:8080:9080" # example of mapping
+
+# ------------------------------------------
 # Global variables
 # ------------------------------------------
 
@@ -529,9 +534,9 @@ function dockerBuild {
   do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
   done
   _docker build $tags $buildargs $DockerDir 
-  _docker images | grep -v " latest "
+  info "$ docker images .."
+  docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
 }
-
 
 
 function dockerRun {
@@ -550,13 +555,17 @@ function dockerRun {
        opts="-d --name=$DockerImg --network=$DOCKER_NETWORK"
        volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
        [[ -n $volume ]] && opts="$opts --mount source=${DockerImg}-data,target=$volume"
-       for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | awk '{print $2}')
-       do  hport=$(sed  -n "s/^#.*$port->\([0-9]*\)/\1/p" $DockerDir/Dockerfile) 
-	   [[ -n $hport ]] && opts="$opts -p $hport:$port"
+       for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | cut -c 8-)
+       do for m in $DOCKER_PORTS_
+	  do hport=$(grep $DockerImg:$port <<<$m | cut -d: -f3)
+	    [[ -n $hport ]] && opts="$opts -p $hport:$port"
+	 done
        done
        for e in $(env |egrep "^${DockerImg^^}_")
        do opts="$opts -e $e"
        done
+       # WA for NIFI-4761
+       [[ $DockerImg == nifi ]] && opts="$opts -h $DOCKER_HOST"
        args=start
   else # command mode
        opts="-i --rm --network=$DOCKER_NETWORK"
@@ -593,12 +602,14 @@ function dockerStatus {
   dockerCheck
   opt v 
   if [[ $? -eq 0 ]]
-  then _docker images
-       _docker ps -a
-  else info "$ docker images .."
-       docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
-       info "$ docker ps .."
-       docker ps -a  --format 'table{{.Image}}:{{.Names}}\t{{.ID}}\t{{.Status}}'
+  then 
+    _docker images
+    _docker ps -a
+  else 
+    info "$ docker images .."
+    docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
+    info "$ docker ps .."
+    docker ps -a  --format 'table{{.Image}}:{{.Names}}\t{{.ID}}\t{{.Status}}'
   fi
   _docker volume ls
 }
