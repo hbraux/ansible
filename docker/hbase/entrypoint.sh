@@ -1,27 +1,32 @@
 #!/bin/bash
 
 function _help {
- echo "$SERVER_INFO
+ echo "$IMAGE_INFO
 
-Prerequisite: create a Used Defined Network for server Name resolution; example
-  docker network create --driver bridge udn
+WARNING: this image is for testing and development purpose only. It does not
+support Docker Services.
 
-Start server (no persistence)
-  docker run -d --name=hbase --network=udn -p 8080:8080 -p 16010:16010 hbase start
+Prerequisites
+- create a Used Defined Network for hostname resolution
+$ docker network create --driver bridge udn
 
-To use Thrift API instead of REST API run: hbase start --thrift
+Start server
+$ docker run -d --name=hbase --network=udn -p 16000:16000 -p 16010:16010 hbase start
+
+Other docker run options
+   -v hbase:/data      for data persistence
+   -e HEAP_SIZE=xxx    to increase the Heap Size (by default 128m)
+   .. start --thrift   to use Thrift API instead of REST API 
 
 HBase shell
-  docker run  -it --rm --network=udn hbase shell
+$ docker run  -it --rm --network=udn hbase shell
 
 Rest API
-  http://<docker_host>:8080/
+  http://hbase:16000/
 
 HBase UI
-  http://<docker_host>:16010/
+  http://hbase:16010/
 
-Stop server
-  docker stop hbase && docker rm hbase
 "
 }
 
@@ -31,10 +36,14 @@ function _setup {
   cat > conf/hbase-site.xml <<EOF
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property>
-    <name>hbase.rootdir</name>
-    <value>file:////opt/hbase/data</value>
-  </property>
+ <property>
+  <name>hbase.rootdir</name>
+  <value>file:////data</value>
+ </property>
+ <property>
+  <name>hbase.rest.port</name>
+  <value>16000</value>
+ </property>
 </configuration>
 EOF
   touch .setup
@@ -45,10 +54,10 @@ function _setupcli {
   cat > conf/hbase-site.xml <<EOF
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property>
-     <name>hbase.zookeeper.quorum</name>
-     <value>hbase</value>
-  </property>
+ <property>
+  <name>hbase.zookeeper.quorum</name>
+  <value>hbase</value>
+ </property>
 </configuration>
 EOF
 }
@@ -56,9 +65,10 @@ EOF
 function _start {
   _setup
   if [[ $1 == -thrift ]]
-  then hbase thrift start >logs/hbase-thrift.log 2>&1 &
-  else hbase rest start > logs/hbase-rest.log 2>&1 &
+  then HBASE_HEAPSIZE=32m hbase thrift start &
+  else HBASE_HEAPSIZE=32m hbase rest start  &
   fi
+  export HBASE_HEAPSIZE=${HEAP_SIZE:-128m}
   exec hbase master start
 }
 

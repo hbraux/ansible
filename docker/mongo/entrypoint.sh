@@ -3,32 +3,43 @@
 function _help {
   echo "$IMAGE_INFO
 
-Prerequisite: create a Used Defined Network for server Name resolution; example
-  docker network create --driver bridge udn
+WARNING: this image is for testing and development purpose only. It does not
+support Docker Services.
 
-Start server (no persistence)
-  docker run -d --name=mongo --network=udn -p 8080:8080 mongo start
+Prerequisites
+- create a Used Defined Network for hostname resolution
+\$ docker network create --driver bridge udn
+
+Start server
+\$ docker run -d --name=mongo --network=udn -p 27000:27000 mongo start
+
+Other docker run options
+  -v mongo:/data      for data persistence
 
 Mongo shell:
-  docker run -it --rm --network=udn mongo shell
+\$ docker run -it --rm --network=udn mongo shell
 
-Rest API
-  http://<docker_host>:8080/
-
-Stop server
-  docker stop mongo && docker rm mongo
+Rest API (Restheart)
+  http://mongo:27000/
 "
 }
 
 function _setup {
   [[ -f .setup ]] && return
-  # noting to setup for Mongo DB
+  (cat>etc/rest.yml)<<EOF
+http-listener: true
+http-port: 27000
+https-listener: false
+connection-options:
+    MAX_HEADER_SIZE: 104857
+EOF
   touch .setup
 }
+export -f _setup
 
 function _start {
   _setup
-  java -Dfile.encoding=UTF-8 -server -jar restheart.jar --fork
+  java -Dfile.encoding=UTF-8 -server -jar restheart.jar etc/rest.yml --fork
   exec mongod 
 }
 

@@ -5,7 +5,8 @@ db.clients.insert({ _id: "10002", "name":"doe","age":25,"coord":[ 12.95,80.70]})
 EOF
 
 # Check Restheart status
-curl -s http://$DOCKER_HOST:8081/test/clients/10002
+dockerRun curl -s http://mongo:27000/test/clients/10002
+
 
 
 

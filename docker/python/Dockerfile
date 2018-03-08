@@ -41,4 +41,4 @@ ENV BUILD_PACKAGES="\
 #   * Reads the -b flags and /build-requirements.txt for build packages -- removed when build is complete
 #   * Reads the -p flags and /requirements.txt for Pip packages
 #   * Reads the -r flag to specify a different file path for /requirements.txt
-ENTRYPOINT ["/usr/bin/dumb-init", "bash", "/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

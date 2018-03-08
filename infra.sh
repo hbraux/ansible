@@ -209,7 +209,6 @@ DOCKER_NETWORK=${DOCKER_NETWORK:-udn}  # for DNS purpose
 # ------------------------------------------
 # Parameters (loaded from Config file)
 # ------------------------------------------
-DOCKER_PORTS_="server:8080:9080" # example of mapping
 
 # ------------------------------------------
 # Global variables
@@ -231,6 +230,8 @@ declare -i VagrantChanged=0
 declare DockerDir
 declare DockerImg
 declare -i DockerTty=1
+declare -i DockerMount=0
+declare SquidIP
 
 # ------------------------------------------
 # usage
@@ -286,8 +287,8 @@ function getDomain {
 function getProxy {
   [[ -n $Proxy ]] && return
   if [[ -n $PROXY_SQUID ]] 
-  then Proxy=http://$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}  
-  else [[ -n $PROXY_SQUID ]] && Proxy=http://$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1):${PROXY_PORT-3128}
+  then SquidIP=$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1 )
+       Proxy=http://$SquidIP:${PROXY_PORT-3128}  
   fi
   Proxy=${Proxy:-$http_proxy}
 }
@@ -529,7 +530,7 @@ function dockerBuild {
   tags="-t $DockerImg:latest"
   [[ -n $vers ]] && tags="$tags -t $DockerImg:$vers"
 
-  buildargs="--build-arg http_proxy=$Proxy"
+  buildargs="--build-arg http_proxy=$Proxy --build-arg no_proxy=${SquidIP:-127.0.0.1}"
   for arg in $(egrep "^ARG " $DockerDir/Dockerfile | sed 's/ARG \([A-Z_]*\)=.*/\1/') 
   do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
   done
@@ -554,12 +555,9 @@ function dockerRun {
        fi
        opts="-d --name=$DockerImg --network=$DOCKER_NETWORK"
        volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
-       [[ -n $volume ]] && opts="$opts --mount source=${DockerImg}-data,target=$volume"
+       [[ -n $volume ]] && opts="$opts --mount source=${DockerImg},target=$volume"
        for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | cut -c 8-)
-       do for m in $DOCKER_PORTS_
-	  do hport=$(grep $DockerImg:$port <<<$m | cut -d: -f3)
-	    [[ -n $hport ]] && opts="$opts -p $hport:$port"
-	 done
+       do opts="$opts -p $port:$port"
        done
        for e in $(env |egrep "^${DockerImg^^}_")
        do opts="$opts -e $e"
@@ -569,6 +567,10 @@ function dockerRun {
        args=start
   else # command mode
        opts="-i --rm --network=$DOCKER_NETWORK"
+       if [[ $DockerMount -eq 1 ]] 
+       then volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
+	    [[ -n $volume ]] && opts="$opts --mount source=${DockerImg},target=$volume"
+       fi
      [[ $DockerTty -eq 1 ]] && opts="-t $opts"       
   fi
   _docker run $opts $DockerImg $args
@@ -593,7 +595,7 @@ function dockerRm {
 	    sleep 2 
        fi
        _docker rm $id
-       volume=${DockerImg}-data
+       volume=${DockerImg}
        docker volume ls | grep -q $volume && _docker volume rm $volume
   fi
 }
@@ -644,8 +646,8 @@ function dockerTest {
   fi
   # execute test file
   info "\nTesting $DockerImg health\n------------------------------------------"
-  DockerTty=0 source $testfile |& tee $TmpFile || die
-  grep -q "Exception " $TmpFile
+  DockerTty=0 DockerMount=1 source $testfile |& tee $TmpFile || die
+  grep -qi "exception \|error " $TmpFile
   [[ $? -eq 0 ]] && die 
   # check persistence (volume)
   testfile=$DockerDir/test-volume.sh
