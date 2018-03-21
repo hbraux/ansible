@@ -10,7 +10,7 @@ ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
 
 ENV PATH $PATH:$JAVA_HOME/bin
 
-# also install compatibility lib
+# also install compatibility libraries for glibc
 RUN apk update && apk add --no-cache libc6-compat openjdk8-jre-base=8.151.12-r0  \
     && rm -fr /var/cache/apk/* 
 

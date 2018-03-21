@@ -3,51 +3,48 @@
 function _help {
 echo "$IMAGE_INFO
 
-Prerequisite: create a Used Defined Network for server Name resolution; example
-  docker network create --driver bridge udn
+WARNING: this image is for testing and development purpose only. It does not
+support Docker Services.
 
-Start server (no persistence)
-  docker run -d --name=kafka --network=udn kafka start
+Prerequisites
+- create a Used Defined Network for hostname resolution
+\$ docker network create --driver bridge udn
 
-Create a topic:
-  docker run  -it --rm --network=udn kafka kafka-topics.sh --zookeeper kafka:2181 --create --topic topic.test --partitions 1 --replication-factor 1
+Start server
+\$ docker run -d --name=kafka --network=udn kafka start
 
-Generate messages: 
-  docker run  -it --rm --network=udn kafka kafka-console-producer.sh --broker-list kafka:9092 --topic topic.test
-  docker run  -it --rm --network=udn kafka kafka-json.sh kafka:9092 topic.test uuid:%uuid date=%now val=%rands
+Other docker run options
+ -e HEAP_SIZE=xxx    to increase the Heap Size (by default $HEAP_SIZE)
+ -v kafka:/data      for data persistence
 
-Consume messages;
-  docker run  -it --rm --network=udn kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic topic.test --from-beginning
+Create a topic
+\$ docker run -it --rm --network=udn kafka kafka-topics.sh --zookeeper kafka:2181 --create --topic mytopic --partitions 1 --replication-factor 1
 
-Stop server
-  docker stop kafka && docker rm kafka
+Kafka cOnsoles
+\$ docker run -it --rm --network=udn kafka kafka-console-producer.sh --broker-list kafka:9092 --topic mytopic
+\$ docker run -it --rm --network=udn kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic mytopic [ --from-beginning ]
+
+JSON Message generator
+\$ docker run  -it --rm --network=udn kafka kafka-json.sh kafka:9092 mytopic ..
 "
 }
 
 function _setup {
   [[ -f .setup ]] && return
-  sed -r -i 's~^log.dirs=.*~log.dirs=/kafka/kafka-logs~' config/server.properties
+  sed -r -i 's~^log.dirs=.*~log.dirs=/data~' config/server.properties
   touch .setup
 }
 export -f _setup # testing purpose
 
-function _setupold {
-  for var in `env | egrep '^KAFKA' | grep -v 'KAFKA_VERSION'`
-  do kafka_name=`echo "$var" | sed -r "s/KAFKA_(.*)=.*/\1/g" | tr '[:upper:]' '[:lower:]' | tr _ .`
-   env_var=`echo "$var" | sed -r "s/(.*)=.*/\1/g"`
-   if egrep -q "(^|^#)$kafka_name=" config/server.properties
-   then sed -r -i "s~(^|^#)($kafka_name)=(.*)~\2=${!env_var}~g" config/server.properties 
-   else echo "$kafka_name=${!env_var}" >> config/server.properties
-   fi
-  done
-}
 
 function _start {
   _setup
   # Starting Zookeeper
-  zookeeper-server-start.sh config/zookeeper.properties &
+  KAFKA_HEAP_OPTS="-Xmx32m -Xms32m" zookeeper-server-start.sh config/zookeeper.properties &
   while ! nc -z localhost 2181;  do sleep 1; done
   # staring kafka
+  HEAP_SIZE=${HEAP_SIZE:-256m}
+  export KAFKA_HEAP_OPTS="-Xmx${HEAP_SIZE} -Xms${HEAP_SIZE}" 
   exec bin/kafka-server-start.sh config/server.properties
 }
 

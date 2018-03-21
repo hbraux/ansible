@@ -1,24 +1,18 @@
+# Python with pip and local proxy
+
 FROM bash
 
-ARG MIRROR=https://si-devops-zhb-nexus.edf.fr/repository/pypi.python.org/simple
+ARG PYTHON_MIRROR=htt://localmirror/
 
 ENV PYTHON_VERSION 2
-
-# These are always installed. Notes:
-#   * dumb-init: a proper init system for containers, to reap zombie children
-#   * bash: For entrypoint, and debugging
-#   * ca-certificates: for SSL verification during Pip and easy_install
-#   * python: the binaries themselves
-#   * py-setuptools: required only in major version 2, installs easy_install so we can install Pip.
-
 
 RUN set -x \
   && apk add --no-cache python2 py-setuptools  \
   && ln -sf /usr/bin/python2.7 /usr/bin/python \
   && ln -sf /usr/bin/python2.7-config /usr/bin/python-config \
   && ln -sf /usr/bin/easy_install-2.7 /usr/bin/easy_install \
-  && easy_install --index-url=$MIRROR pip \
-  && echo -e "[global]\ntimeout=60\nindex-url=$MIRROR" >/etc/pip.conf \
+  && easy_install --index-url=$PYTHON_MIRROR pip \
+  && echo -e "[global]\ntimeout=60\nindex-url=$PYTHON_MIRROR" >/etc/pip.conf \
   && pip install --upgrade pip \
   && ln -sf /usr/bin/pip2.7 /usr/bin/pip
 
@@ -36,9 +30,4 @@ ENV BUILD_PACKAGES="\
   python2-dev \
 "
 
-# This script installs APK and Pip prerequisites on container start, or ONBUILD. Notes:
-#   * Reads the -a flags and /apk-requirements.txt for install requests
-#   * Reads the -b flags and /build-requirements.txt for build packages -- removed when build is complete
-#   * Reads the -p flags and /requirements.txt for Pip packages
-#   * Reads the -r flag to specify a different file path for /requirements.txt
 ENTRYPOINT ["/entrypoint.sh"]

@@ -507,7 +507,7 @@ function getDockerImg {
 
 function dockerBuild {
   getProxy
-  id=$(docker images -q ${DockerImg}:latest)
+  id=$(docker images -q ${DockerImg} |head -1)
   if [[ -n $id ]]
   then warn "Image $DockerImg [$id] already built"
        opt f || return
@@ -516,6 +516,15 @@ function dockerBuild {
   egrep -q '^VOLUME \[' $DockerDir/Dockerfile && die "$TOOL_NAME does not support VOLUME in JSON format"
   vers=$(egrep -i "^ENV ${DockerImg}[A-Z]*_VERSION" $DockerDir/Dockerfile | awk '{print $3}')
   [[ -n $vers ]] || warn "No VERSION found in Dockerfile"
+  # check if this a  server or an intermediate image
+  egrep -q 'entrypoint.sh' $DockerDir/Dockerfile
+  if [[ $? -eq 0 ]]
+  then 
+    egrep -q '^LABEL Description' $DockerDir/Dockerfile || \
+      warn "No Description Label in Dockerfile"
+    egrep -q '^LABEL Usage' $DockerDir/Dockerfile || \
+      warn "No Usage Label in Dockerfile"
+  fi
   if [ -f  $DockerDir/TOOLS ]
   then mkdir -p $DockerDir/tools
        for tool in $(cat $DockerDir/TOOLS)
@@ -530,7 +539,7 @@ function dockerBuild {
   tags="-t $DockerImg:latest"
   [[ -n $vers ]] && tags="$tags -t $DockerImg:$vers"
 
-  buildargs="--build-arg http_proxy=$Proxy --build-arg no_proxy=${SquidIP:-127.0.0.1}"
+  buildargs="--build-arg http_proxy=$Proxy --build-arg https_proxy=$Proxy --build-arg no_proxy=${NO_PROXY:-127.0.0.1}"
   for arg in $(egrep "^ARG " $DockerDir/Dockerfile | sed 's/ARG \([A-Z_]*\)=.*/\1/') 
   do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
   done
@@ -542,7 +551,7 @@ function dockerBuild {
 
 function dockerRun {
   args=$*
-  if [[ $# -eq 0 && $DockerImg != bash && $DockerImg != python ]]
+  if [[ $# -eq 0 && $(grep -c '/entrypoint.sh' $DockerDir/Dockerfile) -eq 1 ]]
   then # server mode
       id=$(docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
        if [[ -n $id ]]
@@ -559,11 +568,11 @@ function dockerRun {
        for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | cut -c 8-)
        do opts="$opts -p $port:$port"
        done
-       for e in $(env |egrep "^${DockerImg^^}_")
-       do opts="$opts -e $e"
+       for e in $(env | cut -d= -f1)
+       do egrep -q "^ENV $e " $DockerDir/Dockerfile && opts="$opts -e $e=${!e}"
        done
        # WA for NIFI-4761
-       [[ $DockerImg == nifi ]] && opts="$opts -h $DOCKER_HOST"
+       [[ $DockerImg == nifi ]] && opts="$opts -h nifi"
        args=start
   else # command mode
        opts="-i --rm --network=$DOCKER_NETWORK"
@@ -667,6 +676,22 @@ function dockerLogs {
   _docker logs $DockerImg
 } 
 
+function dockerInfo {
+  # output labels
+  docker inspect --format='{{range $k,$v:=.Config.Labels}}{{$k}}: {{println $v}}{{end}}' $DockerImg
+}
+
+
+function dockerCopy {
+  [[ -n $DOCKER_COPY_HOST ]]  || die "DOCKER_COPY_HOST not defined"
+  info "$ docker save $DockerImg"
+  docker save $DockerImg >$TmpFile
+  info "($DOCKER_COPY_HOST) $ docker load -i .."
+  DOCKER_HOST=$DOCKER_COPY_HOST docker load -i $TmpFile
+  DOCKER_HOST=$DOCKER_COPY_HOST docker images
+  rm $TmpFile
+}
+  
 # ------------------------------------------
 # Ansible tools
 # ------------------------------------------
@@ -762,6 +787,8 @@ case $Command in
   stop)     getDockerImg $Arguments; dockerStop;;
   test)     getDockerImg $Arguments; dockerTest;;
   l|logs)   getDockerImg $Arguments; dockerLogs;;
+  i|info)   getDockerImg $Arguments; dockerInfo;;
+  cp)       getDockerImg $Arguments; dockerCopy;;
   d|dock)   dockerStatus;;
   clean)    dockerClean ;;
   status)   infraStatus;;
