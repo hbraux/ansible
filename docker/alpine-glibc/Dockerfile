@@ -1,16 +1,20 @@
-# Alpine with glibc, required for conda 
-# Note that Alpine is provded with muscl and not supposed to support glibc 
+# Alpine with glibc
+# Required for conda 
+# Note that Alpine is provided with muscl and not supposed to support glibc 
 # https://wiki.alpinelinux.org/wiki/Running_glibc_programs
 
 # Also provides curl, certificates, bash, tini and git
 
 FROM alpine:3.7
 
-ARG URL_GLIBC=https://github.com/sgerrand/alpine-pkg-glibc/releases/download
+ARG URL_DOWNLOAD=https://github.com/sgerrand
+
+ENV ALPINE-GLIBC_VERSION 3.7
+
+ENV URL_GLIBC=${URL_DOWNLOAD}/alpine-pkg-glibc/releases/download
+ENV GLIBC_VERSION 2.27-r0
 
 ENV LANG=C.UTF-8
-
-ENV GLIBC_VERSION 2.27-r0
 
 RUN apk update && apk add --no-cache curl ca-certificates bash tini git && \
     # remove useless terms

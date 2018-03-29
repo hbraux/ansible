@@ -4,9 +4,13 @@ ARG URL_APACHE=http://apache.crihan.fr/dist
 
 ENV HBASE_VERSION 1.2.6
 
-ENV HEAP_SIZE 128m
+# supported profiles: slim, default, or a Heap Size
+ENV PROFILE default
 
-ENV IMAGE_INFO HBase ${HBASE_VERSION} slim server
+LABEL Description="HBase ${HBASE_VERSION} server with Rest API"
+
+LABEL Usage="docker run -d --name=hbase -e profile=slim --network=udn --mount source=hbase,target=/data -p 16000:16000 -p 16010:16010 hbase start "
+LABEL Usage2="docker run -it --rm --network=udn hbase shell"
 
 RUN set -x && mkdir -p /opt  \
     && curl -s ${URL_APACHE}/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz | tar xzf - -C /opt \ 
@@ -18,15 +22,11 @@ RUN set -x && mkdir -p /opt  \
 
 COPY entrypoint.sh /
 
-ENV PATH ${PATH}:/opt/hbase/bin
 WORKDIR /opt/hbase
 
 USER hbase
 
-# Thrift API  
-EXPOSE 9090
-
-# Zookeeper 
+# Zookeeper (needed for hbase shell)
 EXPOSE 2181
 
 # Rest API
@@ -39,6 +39,6 @@ VOLUME /data
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["help"]
+CMD ["start"]
 
 

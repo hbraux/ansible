@@ -291,6 +291,8 @@ function getProxy {
        Proxy=http://$SquidIP:${PROXY_PORT-3128}  
   fi
   Proxy=${Proxy:-$http_proxy}
+  export http_proxy=
+  export https_proxy=
 }
 
 function getHostIp {
@@ -483,10 +485,12 @@ function _docker {
 }
 
 function dockerCheck {
+  getProxy
   which docker >/dev/null 2>&1 || die "Docker not installed"
   [[ -n $DOCKER_HOST ]] || die "DOCKER_HOST not defined"
   ping -c1 $DOCKER_HOST >/dev/null 2>&1
   [[ $? -eq 0 ]] || die "Docker host $DOCKER_HOST not reachable"
+  egrep -q '^[0-9]+' <<<$DOCKER_HOST || die "\$DOCKER_HOST must be an IP"
   _docker network ls | grep -q $DOCKER_NETWORK 
   [[ $? -eq 0 ]] || _docker network create --driver bridge $DOCKER_NETWORK || die
 
@@ -506,7 +510,6 @@ function getDockerImg {
 }
 
 function dockerBuild {
-  getProxy
   id=$(docker images -q ${DockerImg} |head -1)
   if [[ -n $id ]]
   then warn "Image $DockerImg [$id] already built"
@@ -543,7 +546,7 @@ function dockerBuild {
   for arg in $(egrep "^ARG " $DockerDir/Dockerfile | sed 's/ARG \([A-Z_]*\)=.*/\1/') 
   do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
   done
-  _docker build $tags $buildargs $DockerDir 
+  _docker build $tags $buildargs $DockerDir |tee $LogFile
   info "$ docker images .."
   docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
 }
@@ -568,7 +571,7 @@ function dockerRun {
        for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | cut -c 8-)
        do opts="$opts -p $port:$port"
        done
-       for e in $(env | cut -d= -f1)
+       for e in $(env | egrep '^[A-Z_]*=' | egrep -v '^PATH=' | cut -d= -f1)
        do egrep -q "^ENV $e " $DockerDir/Dockerfile && opts="$opts -e $e=${!e}"
        done
        # WA for NIFI-4761
@@ -642,8 +645,7 @@ function dockerTest {
   [[ -f $testfile ]] || die "No file $testfile"
   dockerRm 
   dockerBuild
-  info "\nTesting help\n------------------------------------------"
-  dockerRun help || die
+  dockerInfo
   info "\nStarting $DockerImg\n------------------------------------------"
   dockerRun
   # wating 10 sec. for server to start

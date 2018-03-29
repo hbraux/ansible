@@ -1,13 +1,10 @@
-# a slim miniconda image
+FROM alpine-glibc
 
-FROM centos:7
+# can be overriden to a local http cache
+ARG URL_DOWNLOAD=""
 
-#FROM glibc
-
-ARG URL_CONTINUM=https://repo.continuum.io
-
-ARG CONDA_PACKAGES="python-dateutil pandas"
-#pandas
+ARG CONDA_PACKAGES=matplotlib,pandas
+ARG CONDA_FORGE_PACKAGES=python-avro
 
 ENV LANG C.UTF-8
 
@@ -17,15 +14,16 @@ ENV IMAGE_INFO Miniconda ${CONDA_VERSION}
 
 ENV PATH /opt/conda/bin:$PATH
 
-RUN export HTTP_PROXY=${http_proxy} && export HTTPS_PROXY=${https_proxy} && \
-    set -x && \
+RUN set -x && \    
     echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
-    curl -s ${URL_CONTINUM}/miniconda/Miniconda2-${CONDA_VERSION}-Linux-x86_64.sh -o ~/miniconda.sh && \
+    curl -s ${URL_DOWNLOAD:-https://repo.anaconda.com}/miniconda/Miniconda2-${CONDA_VERSION}-Linux-x86_64.sh -o ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh  && \
-    conda config --set ssl_verify false && \ 
-    conda config --set show_channel_urls true && \
-    conda update -y -n  base conda && \
-    conda install -y -v $CONDA_PACKAGES 
+    conda config --add channels ${URL_DOWNLOAD:-https://repo.anaconda.com}/pkgs/main && \
+    conda update --yes --name base conda && \
+    conda install --yes ${CONDA_PACKAGES/,/ } && \
+    conda config --add channels ${URL_DOWNLOAD:-https://conda.anaconda.org}/conda-forge && \
+    conda install --yes ${CONDA_FORGE_PACKAGES/,/ }  
 
-CMD [ "/bin/bash" ]
+CMD [ "python" ]
+
