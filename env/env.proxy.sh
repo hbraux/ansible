@@ -26,15 +26,19 @@ export PROXY_AUTH_STR
 # ------------------------------------------
 
 function _proxy_auth {
-  [[ -n $PROXY_AUTH_HOSTS ]] || return
-  if [[ ! -f $HOME/.netrc ]] 
-  then echo "No file $HOME/.netrc"; return
+  [[ -n $PROXY_AUTH_HOSTS ]] || return 1
+  if [[ -n $NNI && -n $SESAME ]]
+  then login="$NNI:$SESAME"
+  else
+    if [[ ! -f $HOME/.netrc ]] 
+    then echo "No file $HOME/.netrc"; return 1
+    fi
+    egrep -q '^machine proxy' $HOME/.netrc 
+    if [[ $? -ne 0 ]]
+    then echo "No line 'machine proxy..' in $HOME/.netrc"; return 1
+    fi
+    login=$(egrep '^machine proxy' $HOME/.netrc | awk '{print $4 ":" $6}')
   fi
-  grep -q 'machine proxy' $HOME/.netrc 
-  if [[ $? -ne 0 ]]
-  then echo "No line 'machine proxy..' in $HOME/.netrc"; return
-  fi
-  login=$(grep 'machine proxy' $HOME/.netrc | awk '{print $4 ":" $6}')
   for h in $(echo $PROXY_AUTH_HOSTS) 
   do curl -Iiku $login "http://$h/$PROXY_AUTH_STR"
      [[ $? -eq 0 ]] || echo "Authentification failed on $h"

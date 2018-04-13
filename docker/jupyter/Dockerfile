@@ -3,15 +3,16 @@ FROM alpine-glibc
 # can be overriden to a local http cache
 ARG URL_DOWNLOAD=""
 
-ARG CONDA_PACKAGES=matplotlib,pandas
+ARG CONDA_PACKAGES=matplotlib,pandas,jupyter
 ARG CONDA_FORGE_PACKAGES=python-avro
 
 ENV LANG C.UTF-8
 
 ENV CONDA_VERSION 4.4.10
+ENV JUPYTER_VERSION 4.4
 
-LABEL Description="Miniconda ${CONDA_VERSION}"
-LABEL Usage="docker run -ti --rm --network=udn conda"
+LABEL Description="Conda/Jupyter Server $JUPYTER_VERSION"
+LABEL Usage="docker run -d --name=jupyter --network=udn --mount source=jupyter,target=/data -p 8888:8888 jupyter start"
 
 ENV PATH /opt/conda/bin:$PATH
 
@@ -24,7 +25,20 @@ RUN set -x && \
     conda update --yes --name base conda && \
     conda install --yes ${CONDA_PACKAGES//,/ } && \
     conda config --add channels ${URL_DOWNLOAD:-https://conda.anaconda.org}/conda-forge && \
-    conda install --yes ${CONDA_FORGE_PACKAGES//,/ }  
+    conda install --yes ${CONDA_FORGE_PACKAGES//,/ } && \
+    adduser -D -h /data -s /bin/bash jupyter 
 
-CMD [ "python" ]
+COPY entrypoint.sh /
+
+USER jupyter
+
+WORKDIR /data
+
+EXPOSE 8888
+
+VOLUME /data
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["start"]
 

@@ -5,9 +5,9 @@ ENV CACHE_VERSION 0.1
 # Warning: DOCKER_HOST must be an @IP for FTP Passive mode
 ENV DOCKER_HOST 127.0.0.1
 
-# Passive Port Range for FTP
+# Passive Port Range for FTP (3 should be enough)
 ENV PASV_MIN_PORT 21001
-ENV PASV_MAX_PORT 21009
+ENV PASV_MAX_PORT 21003
 
 LABEL Description="HTTP/FTP Cache Server V${CACHE_VERSION} with upload support"
 
@@ -19,7 +19,7 @@ RUN apk update && apk add --no-cache apache2 vsftpd \
 COPY entrypoint.sh /
 
 EXPOSE 80 21
-EXPOSE 21001-21009
+EXPOSE 21001-21003
 
 VOLUME /data
 
