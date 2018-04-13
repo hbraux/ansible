@@ -1,447 +1,0 @@
-[1;30m$ docker build -t jupyter:latest -t jupyter:4.4 --build-arg http_proxy=http://192.168.56.31:3128 --build-arg https_proxy=http://192.168.56.31:3128 --build-arg no_proxy=192.168.56.101,docker1.hostonly.com,gitlab.acc.edf.fr,si-devops-gitlab.edf.fr --build-arg URL_DOWNLOAD=http://192.168.56.101/pub /home/harold/git/hub/deploy/docker/jupyter[m
-Sending build context to Docker daemon   5.12kB
-Step 1/15 : FROM alpine-glibc
- ---> 73f7ed1bdf11
-Step 2/15 : ARG URL_DOWNLOAD=""
- ---> Using cache
- ---> 950a54ce86e4
-Step 3/15 : ARG CONDA_PACKAGES=matplotlib,pandas,jupyter
- ---> Using cache
- ---> c8a60eee515b
-Step 4/15 : ARG CONDA_FORGE_PACKAGES=python-avro
- ---> Using cache
- ---> d2238b3dc3df
-Step 5/15 : ENV LANG C.UTF-8
- ---> Using cache
- ---> 13c85e051e96
-Step 6/15 : ENV CONDA_VERSION 4.4.10
- ---> Using cache
- ---> f38b0b804c19
-Step 7/15 : ENV JUPYTER_VERSION 4.4
- ---> Running in 40d3add1100f
-Removing intermediate container 40d3add1100f
- ---> 67d2fb16ee4a
-Step 8/15 : LABEL Description="Conda/Jupyter $JUPYTER_VERSION"
- ---> Running in 5f9f889bcb06
-Removing intermediate container 5f9f889bcb06
- ---> 7a68a721c5a3
-Step 9/15 : LABEL Usage="cocker run -d --name=jupyter --network=udn -p 8888:8888 jupyter start"
- ---> Running in 2772d1aee6f2
-Removing intermediate container 2772d1aee6f2
- ---> 1dcc4a6dea09
-Step 10/15 : ENV PATH /opt/conda/bin:$PATH
- ---> Running in 37cc125bd3f6
-Removing intermediate container 37cc125bd3f6
- ---> 7d5c3af7e1ba
-Step 11/15 : RUN set -x &&     echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh &&     curl -s ${URL_DOWNLOAD:-https://repo.anaconda.com}/miniconda/Miniconda2-${CONDA_VERSION}-Linux-x86_64.sh -o ~/miniconda.sh &&     /bin/bash ~/miniconda.sh -b -p /opt/conda &&     rm ~/miniconda.sh  &&     conda config --add channels ${URL_DOWNLOAD:-https://repo.anaconda.com}/pkgs/main &&     conda update --yes --name base conda &&     conda install --yes ${CONDA_PACKAGES//,/ } &&     conda config --add channels ${URL_DOWNLOAD:-https://conda.anaconda.org}/conda-forge &&     conda install --yes ${CONDA_FORGE_PACKAGES//,/ }
- ---> Running in c292bae758ab
-[91m+ echo export PATH=/opt/conda/bin:$PATH
-+ curl -s http://192.168.56.101/pub/miniconda/Miniconda2-4.4.10-Linux-x86_64.sh -o /root/miniconda.sh
-[0m[91m+ /bin/bash /root/miniconda.sh -b -p /opt/conda
-[0mPREFIX=/opt/conda
-installing: python-2.7.14-h1571d57_29 ...
-[91mPython 2.7.14 :: Anaconda, Inc.
-[0minstalling: ca-certificates-2017.08.26-h1d4fec5_0 ...
-installing: conda-env-2.6.0-h36134e3_1 ...
-installing: libgcc-ng-7.2.0-h7cc24e2_2 ...
-installing: libstdcxx-ng-7.2.0-h7a57d05_2 ...
-installing: libffi-3.2.1-hd88cf55_4 ...
-installing: ncurses-6.0-h9df7e31_2 ...
-installing: openssl-1.0.2n-hb7f436b_0 ...
-installing: tk-8.6.7-hc745277_3 ...
-installing: yaml-0.1.7-had09818_2 ...
-installing: zlib-1.2.11-ha838bed_2 ...
-installing: libedit-3.1-heed3624_0 ...
-installing: readline-7.0-ha6073c6_4 ...
-installing: sqlite-3.22.0-h1bed415_0 ...
-installing: asn1crypto-0.24.0-py27_0 ...
-installing: certifi-2018.1.18-py27_0 ...
-installing: chardet-3.0.4-py27hfa10054_1 ...
-installing: enum34-1.1.6-py27h99a27e9_1 ...
-installing: futures-3.2.0-py27h7b459c0_0 ...
-installing: idna-2.6-py27h5722d68_1 ...
-installing: ipaddress-1.0.19-py27_0 ...
-installing: pycosat-0.6.3-py27ha4109ae_0 ...
-installing: pycparser-2.18-py27hefa08c5_1 ...
-installing: pysocks-1.6.7-py27he2db6d2_1 ...
-installing: ruamel_yaml-0.15.35-py27h14c3975_1 ...
-installing: six-1.11.0-py27h5f960f1_1 ...
-installing: cffi-1.11.4-py27h9745a5d_0 ...
-installing: setuptools-38.4.0-py27_0 ...
-installing: cryptography-2.1.4-py27h6697b16_0 ...
-installing: wheel-0.30.0-py27h2bc6bb2_1 ...
-installing: pip-9.0.1-py27ha730c48_4 ...
-installing: pyopenssl-17.5.0-py27hcee3be0_0 ...
-installing: urllib3-1.22-py27ha55213b_0 ...
-installing: requests-2.18.4-py27hc5b0589_1 ...
-installing: conda-4.4.10-py27_0 ...
-installation finished.
-[91m+ rm /root/miniconda.sh
-[0m[91m+ conda config --add channels http://192.168.56.101/pub/pkgs/main
-[0m[91m+ conda update --yes --name base conda
-[0mSolving environment: ...working... done
-[91mca-certificates 2017.08.26:            |   0% [0m[91mca-certificates 2017.08.26: ########## | 100% 
-[0m[91mconda 4.5.0:            |   0% [0m[91mconda 4.5.0: #######5   |  75% [0m[91mconda 4.5.0: ########7  |  87% [0m[91mconda 4.5.0: #########7 |  98% [0m[91mconda 4.5.0: ########## | 100% 
-[0m[91mcertifi 2018.1.18:            |   0% [0m[91mcertifi 2018.1.18: ########## | 100% 
-[0m[91mopenssl 1.0.2n:            |   0% [0m[91mopenssl 1.0.2n: #######5   |  75% [0m[91mopenssl 1.0.2n: #######9   |  80% [0m[91mopenssl 1.0.2n: ########3  |  84% [0m[91mopenssl 1.0.2n: ########8  |  89% [0m[91mopenssl 1.0.2n: #########5 |  96% [0m[91mopenssl 1.0.2n: ########## | 100% 
-[0m
-## Package Plan ##
-
-  environment location: /opt/conda
-
-  added / updated specs: 
-    - conda
-
-
-The following packages will be downloaded:
-
-    package                    |            build
-    ---------------------------|-----------------
-    ca-certificates-2017.08.26 |       h1d4fec5_0         263 KB  http://192.168.56.101/pub/pkgs/main
-    conda-4.5.0                |           py27_0         1.0 MB  http://192.168.56.101/pub/pkgs/main
-    certifi-2018.1.18          |           py27_0         143 KB  http://192.168.56.101/pub/pkgs/main
-    openssl-1.0.2n             |       hb7f436b_0         3.4 MB  http://192.168.56.101/pub/pkgs/main
-    ------------------------------------------------------------
-                                           Total:         4.9 MB
-
-The following packages will be UPDATED:
-
-    ca-certificates: 2017.08.26-h1d4fec5_0 --> 2017.08.26-h1d4fec5_0 http://192.168.56.101/pub/pkgs/main
-    certifi:         2018.1.18-py27_0      --> 2018.1.18-py27_0      http://192.168.56.101/pub/pkgs/main
-    conda:           4.4.10-py27_0         --> 4.5.0-py27_0          http://192.168.56.101/pub/pkgs/main
-    openssl:         1.0.2n-hb7f436b_0     --> 1.0.2n-hb7f436b_0     http://192.168.56.101/pub/pkgs/main
-
-
-Downloading and Extracting Packages
-Preparing transaction: ...working... done
-Verifying transaction: ...working... done
-Executing transaction: ...working... done
-[91m+ conda install --yes matplotlib pandas jupyter
-[0mSolving environment: ...working... done
-
-## Package Plan ##
-
-  environment location: /opt/conda
-
-  added / updated specs: 
-    - jupyter
-    - matplotlib
-    - pandas
-
-
-The following packages will be downloaded:
-
-    package                    |            build
-    ---------------------------|-----------------
-    jupyter-1.0.0              |           py27_4           5 KB  http://192.168.56.101/pub/pkgs/main
-    webencodings-0.5.1         |   py27hff10b21_1          19 KB  http://192.168.56.101/pub/pkgs/main
-    backports_abc-0.5          |   py27h7b3c97b_0          12 KB  http://192.168.56.101/pub/pkgs/main
-    pandas-0.22.0              |   py27hf484d3e_0        10.5 MB  http://192.168.56.101/pub/pkgs/main
-    mkl-2018.0.1               |       h19d6760_4       184.7 MB  http://192.168.56.101/pub/pkgs/main
-    pathlib2-2.3.0             |   py27h6e9d198_0          31 KB  http://192.168.56.101/pub/pkgs/main
-    jupyter_core-4.4.0         |   py27h345911c_0          60 KB  http://192.168.56.101/pub/pkgs/main
-    jupyter_console-5.2.0      |   py27hc6bee7e_1          34 KB  http://192.168.56.101/pub/pkgs/main
-    ipython-5.4.1              |           py27_2        1014 KB  http://192.168.56.101/pub/pkgs/main
-    jpeg-9b                    |       h024ee3a_2         248 KB  http://192.168.56.101/pub/pkgs/main
-    dbus-1.12.2                |       hc3f9b76_1         552 KB  http://192.168.56.101/pub/pkgs/main
-    backports.functools_lru_cache-1.5|           py27_1           9 KB  http://192.168.56.101/pub/pkgs/main
-    functools32-3.2.3.2        |   py27h4ead58f_1          22 KB  http://192.168.56.101/pub/pkgs/main
-    terminado-0.8.1            |           py27_1          20 KB  http://192.168.56.101/pub/pkgs/main
-    glib-2.53.6                |       h5d9569c_2         8.4 MB  http://192.168.56.101/pub/pkgs/main
-    intel-openmp-2018.0.0      |       hc7b2577_8         618 KB  http://192.168.56.101/pub/pkgs/main
-    icu-58.2                   |       h9c2bf20_1        22.5 MB  http://192.168.56.101/pub/pkgs/main
-    scandir-1.7                |   py27h14c3975_0          27 KB  http://192.168.56.101/pub/pkgs/main
-    pickleshare-0.7.4          |   py27h09770e1_0          11 KB  http://192.168.56.101/pub/pkgs/main
-    pyzmq-17.0.0               |   py27h14c3975_0         440 KB  http://192.168.56.101/pub/pkgs/main
-    testpath-0.3.1             |   py27hc38d2c4_0          89 KB  http://192.168.56.101/pub/pkgs/main
-    singledispatch-3.4.0.3     |   py27h9bcb476_0          15 KB  http://192.168.56.101/pub/pkgs/main
-    libpng-1.6.34              |       hb9fc6fc_0         334 KB  http://192.168.56.101/pub/pkgs/main
-    jupyter_client-5.2.3       |           py27_0         122 KB  http://192.168.56.101/pub/pkgs/main
-    decorator-4.2.1            |           py27_0          15 KB  http://192.168.56.101/pub/pkgs/main
-    prompt_toolkit-1.0.15      |   py27h1b593e1_0         333 KB  http://192.168.56.101/pub/pkgs/main
-    libxml2-2.9.7              |       h26e45fe_0         2.0 MB  http://192.168.56.101/pub/pkgs/main
-    nbformat-4.4.0             |   py27hed7f2b2_0         136 KB  http://192.168.56.101/pub/pkgs/main
-    wcwidth-0.1.7              |   py27h9e3e1ab_0          25 KB  http://192.168.56.101/pub/pkgs/main
-    markupsafe-1.0             |   py27h97b2822_1          24 KB  http://192.168.56.101/pub/pkgs/main
-    ptyprocess-0.5.2           |   py27h4ccb14c_0          22 KB  http://192.168.56.101/pub/pkgs/main
-    bleach-2.1.3               |           py27_0          32 KB  http://192.168.56.101/pub/pkgs/main
-    cycler-0.10.0              |   py27hc7354d3_0          13 KB  http://192.168.56.101/pub/pkgs/main
-    pandoc-1.19.2.1            |       hea2e7c5_1        17.8 MB  http://192.168.56.101/pub/pkgs/main
-    configparser-3.5.0         |   py27h5117587_0          35 KB  http://192.168.56.101/pub/pkgs/main
-    pytz-2018.3                |           py27_0         211 KB  http://192.168.56.101/pub/pkgs/main
-    zeromq-4.2.3               |       h439df22_3         580 KB  http://192.168.56.101/pub/pkgs/main
-    simplegeneric-0.8.1        |           py27_2           9 KB  http://192.168.56.101/pub/pkgs/main
-    widgetsnbextension-3.1.4   |           py27_0         1.7 MB  http://192.168.56.101/pub/pkgs/main
-    entrypoints-0.2.3          |   py27h502b47d_2           9 KB  http://192.168.56.101/pub/pkgs/main
-    matplotlib-2.2.2           |   py27h0e671d2_0         6.5 MB  http://192.168.56.101/pub/pkgs/main
-    pyqt-5.6.0                 |   py27h4b1e83c_5         5.3 MB  http://192.168.56.101/pub/pkgs/main
-    xz-5.2.3                   |       h55aa19d_2         357 KB  http://192.168.56.101/pub/pkgs/main
-    nbconvert-5.3.1            |   py27he041f76_0         395 KB  http://192.168.56.101/pub/pkgs/main
-    ipython_genutils-0.2.0     |   py27h89fb69b_0          38 KB  http://192.168.56.101/pub/pkgs/main
-    gst-plugins-base-1.12.4    |       h33fb286_0         4.8 MB  http://192.168.56.101/pub/pkgs/main
-    pygments-2.2.0             |   py27h4a8b6f5_0         1.3 MB  http://192.168.56.101/pub/pkgs/main
-    pcre-8.41                  |       hc27e229_1         251 KB  http://192.168.56.101/pub/pkgs/main
-    jinja2-2.10                |   py27h4114e70_0         177 KB  http://192.168.56.101/pub/pkgs/main
-    pandocfilters-1.4.2        |   py27h428e1e5_1          12 KB  http://192.168.56.101/pub/pkgs/main
-    numpy-1.14.2               |   py27hdbf6ddf_0         4.0 MB  http://192.168.56.101/pub/pkgs/main
-    pexpect-4.4.0              |           py27_0          70 KB  http://192.168.56.101/pub/pkgs/main
-    mistune-0.8.3              |           py27_0          52 KB  http://192.168.56.101/pub/pkgs/main
-    qt-5.6.2                   |      hd25b39d_14        44.5 MB  http://192.168.56.101/pub/pkgs/main
-    jsonschema-2.6.0           |   py27h7ed5aa4_0          61 KB  http://192.168.56.101/pub/pkgs/main
-    backports.shutil_get_terminal_size-1.0.0|   py27h5bc021e_2           8 KB  http://192.168.56.101/pub/pkgs/main
-    pyparsing-2.2.0            |   py27hf1513f8_1          93 KB  http://192.168.56.101/pub/pkgs/main
-    libgfortran-ng-7.2.0       |       hdf63c60_3         1.2 MB  http://192.168.56.101/pub/pkgs/main
-    qtconsole-4.3.1            |   py27hc444b0d_0         147 KB  http://192.168.56.101/pub/pkgs/main
-    libsodium-1.0.15           |       hf101ebd_0         313 KB  http://192.168.56.101/pub/pkgs/main
-    backports-1.0              |   py27h63c9359_1           3 KB  http://192.168.56.101/pub/pkgs/main
-    traitlets-4.3.2            |   py27hd6ce930_0         126 KB  http://192.168.56.101/pub/pkgs/main
-    tornado-5.0                |           py27_0         617 KB  http://192.168.56.101/pub/pkgs/main
-    html5lib-1.0.1             |   py27h5233db4_0         188 KB  http://192.168.56.101/pub/pkgs/main
-    gstreamer-1.12.4           |       hb53b477_0         3.6 MB  http://192.168.56.101/pub/pkgs/main
-    ipykernel-4.8.2            |           py27_0         143 KB  http://192.168.56.101/pub/pkgs/main
-    send2trash-1.5.0           |           py27_0          16 KB  http://192.168.56.101/pub/pkgs/main
-    subprocess32-3.2.7         |   py27h373dbce_0          40 KB  http://192.168.56.101/pub/pkgs/main
-    expat-2.2.5                |       he0dffb1_0         186 KB  http://192.168.56.101/pub/pkgs/main
-    kiwisolver-1.0.1           |   py27hc15e7b5_0          86 KB  http://192.168.56.101/pub/pkgs/main
-    gmp-6.1.2                  |       h6c8ec71_1         744 KB  http://192.168.56.101/pub/pkgs/main
-    fontconfig-2.12.6          |       h49f89f6_0         283 KB  http://192.168.56.101/pub/pkgs/main
-    ipywidgets-7.1.2           |           py27_0          94 KB  http://192.168.56.101/pub/pkgs/main
-    python-dateutil-2.7.0      |           py27_0         252 KB  http://192.168.56.101/pub/pkgs/main
-    libxcb-1.12                |       hcd93eb1_4         446 KB  http://192.168.56.101/pub/pkgs/main
-    notebook-5.4.1             |           py27_0         6.6 MB  http://192.168.56.101/pub/pkgs/main
-    sip-4.18.1                 |   py27he9ba0ab_2         278 KB  http://192.168.56.101/pub/pkgs/main
-    freetype-2.8               |       hab7d2ae_1         804 KB  http://192.168.56.101/pub/pkgs/main
-    ------------------------------------------------------------
-                                           Total:       336.6 MB
-
-The following NEW packages will be INSTALLED:
-
-    backports:                          1.0-py27h63c9359_1     http://192.168.56.101/pub/pkgs/main
-    backports.functools_lru_cache:      1.5-py27_1             http://192.168.56.101/pub/pkgs/main
-    backports.shutil_get_terminal_size: 1.0.0-py27h5bc021e_2   http://192.168.56.101/pub/pkgs/main
-    backports_abc:                      0.5-py27h7b3c97b_0     http://192.168.56.101/pub/pkgs/main
-    bleach:                             2.1.3-py27_0           http://192.168.56.101/pub/pkgs/main
-    configparser:                       3.5.0-py27h5117587_0   http://192.168.56.101/pub/pkgs/main
-    cycler:                             0.10.0-py27hc7354d3_0  http://192.168.56.101/pub/pkgs/main
-    dbus:                               1.12.2-hc3f9b76_1      http://192.168.56.101/pub/pkgs/main
-    decorator:                          4.2.1-py27_0           http://192.168.56.101/pub/pkgs/main
-    entrypoints:                        0.2.3-py27h502b47d_2   http://192.168.56.101/pub/pkgs/main
-    expat:                              2.2.5-he0dffb1_0       http://192.168.56.101/pub/pkgs/main
-    fontconfig:                         2.12.6-h49f89f6_0      http://192.168.56.101/pub/pkgs/main
-    freetype:                           2.8-hab7d2ae_1         http://192.168.56.101/pub/pkgs/main
-    functools32:                        3.2.3.2-py27h4ead58f_1 http://192.168.56.101/pub/pkgs/main
-    glib:                               2.53.6-h5d9569c_2      http://192.168.56.101/pub/pkgs/main
-    gmp:                                6.1.2-h6c8ec71_1       http://192.168.56.101/pub/pkgs/main
-    gst-plugins-base:                   1.12.4-h33fb286_0      http://192.168.56.101/pub/pkgs/main
-    gstreamer:                          1.12.4-hb53b477_0      http://192.168.56.101/pub/pkgs/main
-    html5lib:                           1.0.1-py27h5233db4_0   http://192.168.56.101/pub/pkgs/main
-    icu:                                58.2-h9c2bf20_1        http://192.168.56.101/pub/pkgs/main
-    intel-openmp:                       2018.0.0-hc7b2577_8    http://192.168.56.101/pub/pkgs/main
-    ipykernel:                          4.8.2-py27_0           http://192.168.56.101/pub/pkgs/main
-    ipython:                            5.4.1-py27_2           http://192.168.56.101/pub/pkgs/main
-    ipython_genutils:                   0.2.0-py27h89fb69b_0   http://192.168.56.101/pub/pkgs/main
-    ipywidgets:                         7.1.2-py27_0           http://192.168.56.101/pub/pkgs/main
-    jinja2:                             2.10-py27h4114e70_0    http://192.168.56.101/pub/pkgs/main
-    jpeg:                               9b-h024ee3a_2          http://192.168.56.101/pub/pkgs/main
-    jsonschema:                         2.6.0-py27h7ed5aa4_0   http://192.168.56.101/pub/pkgs/main
-    jupyter:                            1.0.0-py27_4           http://192.168.56.101/pub/pkgs/main
-    jupyter_client:                     5.2.3-py27_0           http://192.168.56.101/pub/pkgs/main
-    jupyter_console:                    5.2.0-py27hc6bee7e_1   http://192.168.56.101/pub/pkgs/main
-    jupyter_core:                       4.4.0-py27h345911c_0   http://192.168.56.101/pub/pkgs/main
-    kiwisolver:                         1.0.1-py27hc15e7b5_0   http://192.168.56.101/pub/pkgs/main
-    libgfortran-ng:                     7.2.0-hdf63c60_3       http://192.168.56.101/pub/pkgs/main
-    libpng:                             1.6.34-hb9fc6fc_0      http://192.168.56.101/pub/pkgs/main
-    libsodium:                          1.0.15-hf101ebd_0      http://192.168.56.101/pub/pkgs/main
-    libxcb:                             1.12-hcd93eb1_4        http://192.168.56.101/pub/pkgs/main
-    libxml2:                            2.9.7-h26e45fe_0       http://192.168.56.101/pub/pkgs/main
-    markupsafe:                         1.0-py27h97b2822_1     http://192.168.56.101/pub/pkgs/main
- [91mjupyter 1.0.0:            |   0% [0m[91mjupyter 1.0.0: ########## | 100% 
-[0m[91mwebencodings 0.5.1:            |   0% [0m[91mwebencodings 0.5.1: ########## | 100% 
-[0m[91mbackports_abc 0.5:            |   0% [0m[91mbackports_abc 0.5: ########## | 100% 
-[0m[91mpandas 0.22.0:            |   0% [0m[91mpandas 0.22.0: #######5   |  75% [0m[91mpandas 0.22.0: ########1  |  82% [0m[91mpandas 0.22.0: ########5  |  85% [0m[91mpandas 0.22.0: ########9  |  89% [0m[91mpandas 0.22.0: #########2 |  92% [0m[91mpandas 0.22.0: #########4 |  95% [0m[91mpandas 0.22.0: #########7 |  97% [0m[91mpandas 0.22.0: #########9 |  99% [0m[91mpandas 0.22.0: ########## | 100% 
-[0m[91mmkl 2018.0.1:            |   0% [0m[91mmkl 2018.0.1: 5          |   5% [0m[91mmkl 2018.0.1: #1         |  11% [0m[91mmkl 2018.0.1: #7         |  18% [0m[91mmkl 2018.0.1: ##3        |  24% [0m[91mmkl 2018.0.1: ###        |  30% [0m[91mmkl 2018.0.1: ###5       |  35% [0m[91mmkl 2018.0.1: ####1      |  41% [0m[91mmkl 2018.0.1: ####7      |  48% [0m[91mmkl 2018.0.1: #####3     |  54% [0m[91mmkl 2018.0.1: ######     |  60% [0m[91mmkl 2018.0.1: ######6    |  66% [0m[91mmkl 2018.0.1: #######2   |  73% [0m[91mmkl 2018.0.1: #######9   |  79% [0m[91mmkl 2018.0.1: ########5  |  85% [0m[91mmkl 2018.0.1: ########6  |  86% [0m[91mmkl 2018.0.1: ########7  |  87% [0m[91mmkl 2018.0.1: ########7  |  88% [0m[91mmkl 2018.0.1: ########8  |  88% [0m[91mmkl 2018.0.1: ########8  |  89% [0m[91mmkl 2018.0.1: ########9  |  89% [0m[91mmkl 2018.0.1: ########9  |  90% [0m[91mmkl 2018.0.1: #########  |  90% [0m[91mmkl 2018.0.1: #########  |  91% [0m[91mmkl 2018.0.1: #########1 |  91% [0m[91mmkl 2018.0.1: #########1 |  92% [0m[91mmkl 2018.0.1: #########2 |  92% [0m[91mmkl 2018.0.1: #########2 |  93% [0m[91mmkl 2018.0.1: #########3 |  93% [0m[91mmkl 2018.0.1: #########3 |  94% [0m[91mmkl 2018.0.1: #########4 |  94% [0m[91mmkl 2018.0.1: #########4 |  95% [0m[91mmkl 2018.0.1: #########5 |  95% [0m[91mmkl 2018.0.1: #########5 |  96% [0m[91mmkl 2018.0.1: #########6 |  96% [0m[91mmkl 2018.0.1: #########6 |  97% [0m[91mmkl 2018.0.1: #########7 |  97% [0m[91mmkl 2018.0.1: #########7 |  98% [0m[91mmkl 2018.0.1: #########8 |  98% [0m[91mmkl 2018.0.1: #########8 |  99% [0m[91mmkl 2018.0.1: #########9 |  99% [0m[91mmkl 2018.0.1: ########## | 100% [0m[91m
-[0m[91mpathlib2 2.3.0:            |   0% [0m[91mpathlib2 2.3.0: ########## | 100% 
-[0m[91mjupyter_core 4.4.0:            |   0% [0m[91mjupyter_core 4.4.0: ########## | 100% 
-[0m[91mjupyter_console 5.2.0:            |   0% [0m[91mjupyter_console 5.2.0: ########## | 100% 
-[0m[91mipython 5.4.1:            |   0% [0m[91mipython 5.4.1: #######5   |  75% [0m[91mipython 5.4.1: ########9  |  89% [0m[91mipython 5.4.1: ########## | 100% 
-[0m[91mjpeg 9b:            |   0% [0m[91mjpeg 9b: ########## | 100% 
-[0m[91mdbus 1.12.2:            |   0% [0m[91mdbus 1.12.2: #######5   |  75% [0m[91mdbus 1.12.2: ########## | 100% 
-[0m[91mbackports.functools_lru_cache 1.5:            |   0% [0m[91mbackports.functools_lru_cache 1.5: ########## | 100% 
-[0m[91mfunctools32 3.2.3.2:            |   0% [0m[91mfunctools32 3.2.3.2: ########## | 100% 
-[0m[91mterminado 0.8.1:            |   0% [0m[91mterminado 0.8.1: ########## | 100% 
-[0m[91mglib 2.53.6:            |   0% [0m[91mglib 2.53.6: #######5   |  75% [0m[91mglib 2.53.6: ########3  |  83% [0m[91mglib 2.53.6: ########9  |  89% [0m[91mglib 2.53.6: #########3 |  93% [0m[91mglib 2.53.6: #########6 |  97% [0m[91mglib 2.53.6: #########9 | 100% [0m[91mglib 2.53.6: ########## | 100% 
-[0m[91mintel-openmp 2018.0.0:            |   0% [0m[91mintel-openmp 2018.0.0: #######6   |  77% [0m[91mintel-openmp 2018.0.0: ########## | 100% 
-[0m[91micu 58.2:            |   0% [0m[91micu 58.2: ####4      |  44% [0m[91micu 58.2: #######5   |  75% [0m[91micu 58.2: #########2 |  93% [0m[91micu 58.2: ########## | 100% 
-[0m[91mscandir 1.7:            |   0% [0m[91mscandir 1.7: ########## | 100% 
-[0m[91mpickleshare 0.7.4:            |   0% [0m[91mpickleshare 0.7.4: ########## | 100% 
-[0m[91mpyzmq 17.0.0:            |   0% [0m[91mpyzmq 17.0.0: #######5   |  75% [0m[91mpyzmq 17.0.0: #########9 | 100% [0m[91mpyzmq 17.0.0: ########## | 100% 
-[0m[91mtestpath 0.3.1:            |   0% [0m[91mtestpath 0.3.1: ########## | 100% 
-[0m[91msingledispatch 3.4.0.3:            |   0% [0m[91msingledispatch 3.4.0.3: ########## | 100% 
-[0m[91mlibpng 1.6.34:            |   0% [0m[91mlibpng 1.6.34: ########## | 100% 
-[0m[91mjupyter_client 5.2.3:            |   0% [0m[91mjupyter_client 5.2.3: ########## | 100% 
-[0m[91mdecorator 4.2.1:            |   0% [0m[91mdecorator 4.2.1: ########## | 100% 
-[0m[91mprompt_toolkit 1.0.15:            |   0% [0m[91mprompt_toolkit 1.0.15: #######7   |  77% [0m[91mprompt_toolkit 1.0.15: ########## | 100% 
-[0m[91mlibxml2 2.9.7:            |   0% [0m[91mlibxml2 2.9.7: #######5   |  75% [0m[91mlibxml2 2.9.7: #########1 |  92% [0m[91mlibxml2 2.9.7: ########## | 100% 
-[0m[91mnbformat 4.4.0:            |   0% [0m[91mnbformat 4.4.0: #########7 |  98% [0m[91mnbformat 4.4.0: ########## | 100% 
-[0m[91mwcwidth 0.1.7:            |   0% [0m[91mwcwidth 0.1.7: ########## | 100% 
-[0m[91mmarkupsafe 1.0:            |   0% [0m[91mmarkupsafe 1.0: ########## | 100% 
-[0m[91mptyprocess 0.5.2:            |   0% [0m[91mptyprocess 0.5.2: ########## | 100% 
-[0m[91mbleach 2.1.3:            |   0% [0m[91mbleach 2.1.3: ########## | 100% 
-[0m[91mcycler 0.10.0:            |   0% [0m[91mcycler 0.10.0: ########## | 100% 
-[0m[91mpandoc 1.19.2.1:            |   0% [0m[91mpandoc 1.19.2.1: #####8     |  58% [0m[91mpandoc 1.19.2.1: #######6   |  76% [0m[91mpandoc 1.19.2.1: #########8 |  99% [0m[91mpandoc 1.19.2.1: ########## | 100% 
-[0m[91mconfigparser 3.5.0:            |   0% [0m[91mconfigparser 3.5.0: ########## | 100% 
-[0m[91mpytz 2018.3:            |   0% [0m[91mpytz 2018.3: #######5   |  75% [0m[91mpytz 2018.3: #########5 |  95% [0m[91mpytz 2018.3: ########## | 100% 
-[0m[91mzeromq 4.2.3:            |   0% [0m[91mzeromq 4.2.3: #######5   |  75% [0m[91mzeromq 4.2.3: ########## | 100% 
-[0m[91msimplegeneric 0.8.1:            |   0% [0m[91msimplegeneric 0.8.1: ########## | 100% 
-[0m[91mwidgetsnbextension 3.1.4:            |   0% [0m[91mwidgetsnbextension 3.1.4: #######5   |  75% [0m[91mwidgetsnbextension 3.1.4: #########8 |  98% [0m[91mwidgetsnbextension 3.1.4: ########## | 100% 
-[0m[91mentrypoints 0.2.3:            |   0% [0m[91mentrypoints 0.2.3: ########## | 100% 
-[0m[91mmatplotlib 2.2.2:            |   0% [0m[91mmatplotlib 2.2.2: #######5   |  75% [0m[91mmatplotlib 2.2.2: ########5  |  86% [0m[91mmatplotlib 2.2.2: #########1 |  91% [0m[91mmatplotlib 2.2.2: #########6 |  97% [0m[91mmatplotlib 2.2.2: ########## | 100% 
-[0m[91mpyqt 5.6.0:            |   0% [0m[91mpyqt 5.6.0: #######5   |  75% [0m[91mpyqt 5.6.0: ########4  |  85% [0m[91mpyqt 5.6.0: #########3 |  94% [0m[91mpyqt 5.6.0: #########9 | 100% [0m[91mpyqt 5.6.0: ########## | 100% 
-[0m[91mxz 5.2.3:            |   0% [0m[91mxz 5.2.3: #######5   |  75% [0m[91mxz 5.2.3: ########## | 100% 
-[0m[91mnbconvert 5.3.1:            |   0% [0m[91mnbconvert 5.3.1: #######5   |  75% [0m[91mnbconvert 5.3.1: #########7 |  98% [0m[91mnbconvert 5.3.1: ########## | 100% 
-[0m[91mipython_genutils 0.2.0:            |   0% [0m[91mipython_genutils 0.2.0: ########## | 100% 
-[0m[91mgst-plugins-base 1.12.4:            |   0% [0m[91mgst-plugins-base 1.12.4: #######5   |  75% [0m[91mgst-plugins-base 1.12.4: #########4 |  94% [0m[91mgst-plugins-base 1.12.4: ########## | 100% 
-[0m[91mpygments 2.2.0:            |   0% [0m[91mpygments 2.2.0: #######5   |  75% [0m[91mpygments 2.2.0: ########9  |  89% [0m[91mpygments 2.2.0: #########8 |  98% [0m[91mpygments 2.2.0: ########## | 100% 
-[0m[91mpcre 8.41:            |   0% [0m[91mpcre 8.41: ########## | 100% 
-[0m[91mjinja2 2.10:            |   0% [0m[91mjinja2 2.10: #########2 |  93% [0m[91mjinja2 2.10: ########## | 100% 
-[0m[91mpandocfilters 1.4.2:            |   0% [0m[91mpandocfilters 1.4.2: ########## | 100% 
-[0m[91mnumpy 1.14.2:            |   0% [0m[91mnumpy 1.14.2: #######5   |  75% [0m[91mnumpy 1.14.2: ########6  |  86% [0m[91mnumpy 1.14.2: #########2 |  93% [0m[91mnumpy 1.14.2: #########8 |  98% [0m[91mnumpy 1.14.2: ########## | 100% 
-[0m[91mpexpect 4.4.0:            |   0% [0m[91mpexpect 4.4.0: ########## | 100% 
-[0m[91mmistune 0.8.3:            |   0% [0m[91mmistune 0.8.3: ########## | 100% 
-[0m[91mqt 5.6.2:            |   0% [0m[91mqt 5.6.2: ##6        |  26% [0m[91mqt 5.6.2: ####8      |  48% [0m[91mqt 5.6.2: #######3   |  74% [0m[91mqt 5.6.2: ########9  |  90% [0m[91mqt 5.6.2: ########## | 100% 
-[0m[91mjsonschema 2.6.0:            |   0% [0m[91mjsonschema 2.6.0: ########## | 100% 
-[0m[91mbackports.shutil_get_terminal_size 1.0.0:            |   0% [0m[91mbackports.shutil_get_terminal_size 1.0.0: ########## | 100% 
-[0m[91mpyparsing 2.2.0:            |   0% [0m[91mpyparsing 2.2.0: ########## | 100% 
-[0m[91mlibgfortran-ng 7.2.0:            |   0% [0m[91mlibgfortran-ng 7.2.0: #######5   |  75% [0m[91mlibgfortran-ng 7.2.0: #########8 |  99% [0m[91mlibgfortran-ng 7.2.0: ########## | 100% 
-[0m[91mqtconsole 4.3.1:            |   0% [0m[91mqtconsole 4.3.1: ########5  |  85% [0m[91mqtconsole 4.3.1: ########## | 100% 
-[0m[91mlibsodium 1.0.15:            |   0% [0m[91mlibsodium 1.0.15: #########7 |  97% [0m[91mlibsodium 1.0.15: ########## | 100% 
-[0m[91mbackports 1.0:            |   0% [0m[91mbackports 1.0: ########## | 100% 
-[0m[91mtraitlets 4.3.2:            |   0% [0m[91mtraitlets 4.3.2: ########## | 100% 
-[0m[91mtornado 5.0:            |   0% [0m[91mtornado 5.0: #######5   |  75% [0m[91mtornado 5.0: #########4 |  95% [0m[91mtornado 5.0: ########## | 100% 
-[0m[91mhtml5lib 1.0.1:            |   0% [0m[91mhtml5lib 1.0.1: ########## | 100% 
-[0m[91mgstreamer 1.12.4:            |   0% [0m[91mgstreamer 1.12.4: #######5   |  75% [0m[91mgstreamer 1.12.4: #########7 |  98% [0m[91mgstreamer 1.12.4: ########## | 100% 
-[0m[91mipykernel 4.8.2:            |   0% [0m[91mipykernel 4.8.2: ########## | 100% [0m[91m
-[0m[91msend2trash 1.5.0:            |   0% [0m[91msend2trash 1.5.0: ########## | 100% 
-[0m[91msubprocess32 3.2.7:            |   0% [0m[91msubprocess32 3.2.7: ########## | 100% 
-[0m[91mexpat 2.2.5:            |   0% [0m[91mexpat 2.2.5: ########## | 100% 
-[0m[91mkiwisolver 1.0.1:            |   0% [0m[91mkiwisolver 1.0.1: ########## | 100% 
-[0m[91mgmp 6.1.2:            |   0% [0m[91mgmp 6.1.2: #######5   |  75% [0m[91mgmp 6.1.2: ########## | 100% 
-[0m[91mfontconfig 2.12.6:            |   0% [0m[91mfontconfig 2.12.6: #########9 | 100% [0m[91mfontconfig 2.12.6: ########## | 100% 
-[0m[91mipywidgets 7.1.2:            |   0% [0m[91mipywidgets 7.1.2: ########## | 100% 
-[0m[91mpython-dateutil 2.7.0:            |   0% [0m[91mpython-dateutil 2.7.0: ########## | 100% 
-[0m[91mlibxcb 1.12:            |   0% [0m[91mlibxcb 1.12: #######5   |  75% [0m[91mlibxcb 1.12: #########7 |  98% [0m[91mlibxcb 1.12: ########## | 100% 
-[0m[91mnotebook 5.4.1:            |   0% [0m[91mnotebook 5.4.1: #######5   |  75% [0m[91mnotebook 5.4.1: ########   |  80% [0m[91mnotebook 5.4.1: ########5  |  85% [0m[91mnotebook 5.4.1: ########9  |  90% [0m[91mnotebook 5.4.1: #########3 |  93% [0m[91mnotebook 5.4.1: #########6 |  97% [0m[91mnotebook 5.4.1: #########9 | 100% [0m[91mnotebook 5.4.1: ########## | 100% 
-[0m[91msip 4.18.1:            |   0% [0m[91msip 4.18.1: ########## | 100% 
-[0m[91mfreetype 2.8:            |   0% [0m[91mfreetype 2.8: #######5   |  75% [0m[91mfreetype 2.8: ########## | 100% 
-[0m   matplotlib:                         2.2.2-py27h0e671d2_0   http://192.168.56.101/pub/pkgs/main
-    mistune:                            0.8.3-py27_0           http://192.168.56.101/pub/pkgs/main
-    mkl:                                2018.0.1-h19d6760_4    http://192.168.56.101/pub/pkgs/main
-    nbconvert:                          5.3.1-py27he041f76_0   http://192.168.56.101/pub/pkgs/main
-    nbformat:                           4.4.0-py27hed7f2b2_0   http://192.168.56.101/pub/pkgs/main
-    notebook:                           5.4.1-py27_0           http://192.168.56.101/pub/pkgs/main
-    numpy:                              1.14.2-py27hdbf6ddf_0  http://192.168.56.101/pub/pkgs/main
-    pandas:                             0.22.0-py27hf484d3e_0  http://192.168.56.101/pub/pkgs/main
-    pandoc:                             1.19.2.1-hea2e7c5_1    http://192.168.56.101/pub/pkgs/main
-    pandocfilters:                      1.4.2-py27h428e1e5_1   http://192.168.56.101/pub/pkgs/main
-    pathlib2:                           2.3.0-py27h6e9d198_0   http://192.168.56.101/pub/pkgs/main
-    pcre:                               8.41-hc27e229_1        http://192.168.56.101/pub/pkgs/main
-    pexpect:                            4.4.0-py27_0           http://192.168.56.101/pub/pkgs/main
-    pickleshare:                        0.7.4-py27h09770e1_0   http://192.168.56.101/pub/pkgs/main
-    prompt_toolkit:                     1.0.15-py27h1b593e1_0  http://192.168.56.101/pub/pkgs/main
-    ptyprocess:                         0.5.2-py27h4ccb14c_0   http://192.168.56.101/pub/pkgs/main
-    pygments:                           2.2.0-py27h4a8b6f5_0   http://192.168.56.101/pub/pkgs/main
-    pyparsing:                          2.2.0-py27hf1513f8_1   http://192.168.56.101/pub/pkgs/main
-    pyqt:                               5.6.0-py27h4b1e83c_5   http://192.168.56.101/pub/pkgs/main
-    python-dateutil:                    2.7.0-py27_0           http://192.168.56.101/pub/pkgs/main
-    pytz:                               2018.3-py27_0          http://192.168.56.101/pub/pkgs/main
-    pyzmq:                              17.0.0-py27h14c3975_0  http://192.168.56.101/pub/pkgs/main
-    qt:                                 5.6.2-hd25b39d_14      http://192.168.56.101/pub/pkgs/main
-    qtconsole:                          4.3.1-py27hc444b0d_0   http://192.168.56.101/pub/pkgs/main
-    scandir:                            1.7-py27h14c3975_0     http://192.168.56.101/pub/pkgs/main
-    send2trash:                         1.5.0-py27_0           http://192.168.56.101/pub/pkgs/main
-    simplegeneric:                      0.8.1-py27_2           http://192.168.56.101/pub/pkgs/main
-    singledispatch:                     3.4.0.3-py27h9bcb476_0 http://192.168.56.101/pub/pkgs/main
-    sip:                                4.18.1-py27he9ba0ab_2  http://192.168.56.101/pub/pkgs/main
-    subprocess32:                       3.2.7-py27h373dbce_0   http://192.168.56.101/pub/pkgs/main
-    terminado:                          0.8.1-py27_1           http://192.168.56.101/pub/pkgs/main
-    testpath:                           0.3.1-py27hc38d2c4_0   http://192.168.56.101/pub/pkgs/main
-    tornado:                            5.0-py27_0             http://192.168.56.101/pub/pkgs/main
-    traitlets:                          4.3.2-py27hd6ce930_0   http://192.168.56.101/pub/pkgs/main
-    wcwidth:                            0.1.7-py27h9e3e1ab_0   http://192.168.56.101/pub/pkgs/main
-    webencodings:                       0.5.1-py27hff10b21_1   http://192.168.56.101/pub/pkgs/main
-    widgetsnbextension:                 3.1.4-py27_0           http://192.168.56.101/pub/pkgs/main
-    xz:                                 5.2.3-h55aa19d_2       http://192.168.56.101/pub/pkgs/main
-    zeromq:                             4.2.3-h439df22_3       http://192.168.56.101/pub/pkgs/main
-
-
-Downloading and Extracting Packages
-Preparing transaction: ...working... done
-Verifying transaction: ...working... done
-Executing transaction: ...working... done
-[91m+ conda config --add channels http://192.168.56.101/pub/conda-forge
-[0m[91m+ conda install --yes python-avro
-[0mSolving environment: ...working... done
-[91mconda 4.3.34:            |   0% [0m[91mconda 4.3.34: #######5   |  75% [0m[91mconda 4.3.34: #########4 |  94% [0m[91mconda 4.3.34: ########## | 100% 
-[0m[91mopenssl 1.0.2n:            |   0% [0m[91mopenssl 1.0.2n: #######5   |  75% [0m[91mopenssl 1.0.2n: ########   |  80% [0m[91mopenssl 1.0.2n: ########4  |  85% [0m[91mopenssl 1.0.2n: #########1 |  91% [0m[91mopenssl 1.0.2n: #########7 |  97% [0m[91mopenssl 1.0.2n: ########## | 100% 
-[0m[91mpython-avro 1.8.2:            |   0% [0m[91mpython-avro 1.8.2: ########## | 100% 
-[0m[91mca-certificates 2018.1.18:            |   0% [0m[91mca-certificates 2018.1.18: ########## | 100% 
-[0m[91mcertifi 2018.1.18:            |   0% [0m[91mcertifi 2018.1.18: ########## | 100% 
-[0m
-## Package Plan ##
-
-  environment location: /opt/conda
-
-  added / updated specs: 
-    - python-avro
-
-
-The following packages will be downloaded:
-
-    package                    |            build
-    ---------------------------|-----------------
-    conda-4.3.34               |           py27_0         507 KB  http://192.168.56.101/pub/conda-forge
-    openssl-1.0.2n             |                0         3.5 MB  http://192.168.56.101/pub/conda-forge
-    python-avro-1.8.2          |           py27_0          52 KB  http://192.168.56.101/pub/conda-forge
-    ca-certificates-2018.1.18  |                0         140 KB  http://192.168.56.101/pub/conda-forge
-    certifi-2018.1.18          |           py27_0         143 KB  http://192.168.56.101/pub/conda-forge
-    ------------------------------------------------------------
-                                           Total:         4.3 MB
-
-The following NEW packages will be INSTALLED:
-
-    python-avro:     1.8.2-py27_0          http://192.168.56.101/pub/conda-forge
-
-The following packages will be UPDATED:
-
-    ca-certificates: 2017.08.26-h1d4fec5_0 http://192.168.56.101/pub/pkgs/main   --> 2018.1.18-0      http://192.168.56.101/pub/conda-forge
-    certifi:         2018.1.18-py27_0      http://192.168.56.101/pub/pkgs/main   --> 2018.1.18-py27_0 http://192.168.56.101/pub/conda-forge
-    openssl:         1.0.2n-hb7f436b_0     http://192.168.56.101/pub/pkgs/main   --> 1.0.2n-0         http://192.168.56.101/pub/conda-forge
-
-The following packages will be DOWNGRADED:
-
-    conda:           4.5.0-py27_0          http://192.168.56.101/pub/pkgs/main   --> 4.3.34-py27_0    http://192.168.56.101/pub/conda-forge
-
-
-Downloading and Extracting Packages
-Preparing transaction: ...working... done
-Verifying transaction: ...working... done
-Executing transaction: ...working... done
-Removing intermediate container c292bae758ab
- ---> 67e8043d41e1
-Step 12/15 : COPY entrypoint.sh /
- ---> 9019232d869a
-Step 13/15 : EXPOSE 8888
- ---> Running in 1ff27ca7c571
-Removing intermediate container 1ff27ca7c571
- ---> b02cb5d0d32a
-Step 14/15 : ENTRYPOINT ["/entrypoint.sh"]
- ---> Running in 0f42f8a16f59
-Removing intermediate container 0f42f8a16f59
- ---> abe744ec6781
-Step 15/15 : CMD ["start"]
- ---> Running in ebd76bf63ec2
-Removing intermediate container ebd76bf63ec2
- ---> 1aea2d929f41
-Successfully built 1aea2d929f41
-Successfully tagged jupyter:latest
-Successfully tagged jupyter:4.4
