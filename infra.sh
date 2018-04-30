@@ -37,7 +37,7 @@ declare TmpFile=$HOME/tmp.${TOOL_NAME}_f$$
 declare TmpDir=$HOME/tmp.${TOOL_NAME}_d$$
 
 # Log file (appending)
-declare LogFile=${TOOL_NAME}.log
+declare LogFile=$HOME/logs/${TOOL_NAME}.log
 
 # command line parameters
 declare Command=
@@ -229,6 +229,8 @@ declare VagrantId
 declare -i VagrantChanged=0
 declare DockerDir
 declare DockerImg
+declare DockerContainer
+declare DockerVolume
 declare -i DockerTty=1
 declare -i DockerMount=0
 declare SquidIP
@@ -245,8 +247,6 @@ Options:
   -f : force
 
 commands:
- env               : setup local env
-
  status            : servers status
  deploy  <pattern> : deploy server(s)
  destroy <pattern> : destroy server(s)
@@ -273,7 +273,7 @@ commands:
 # ------------------------------------------
 
 function getGitRepo {
-  [[ -n $GitRepo ]] && return
+ [[ -n $GitRepo ]] && return
   script=$0
   [ -L $script ] && script=$(readlink $script) 
   GitRepo=$(dirname $script)
@@ -320,38 +320,6 @@ Host *.$Domain
 " >>$HOME/.ssh/config
   fi
 } 
-
-function checkSiteDir {
-  [[ -d $HOME/site.d ]] || mkdir $HOME/site.d
-}
-
-function setupEnv {
-  getGitRepo
-  mkdir -p $HOME/bin
-  mkdir -p $HOME/site.d
-  # environment files
-  if [[ ! -d $HOME/env.d ]]
-  then mkdir $HOME/env.d
-       for f in $(ls $GitRepo/env/env*.sh)
-       do info "Installing ${f##*/} in $HOME/env.d/"
-	  ln -fs $f $HOME/env.d/
-       done
-  fi
-  # infra files
-  for f in $(ls $GitRepo/bin/*.sh)
-  do info "Installing ${f##*/} in $HOME/bin"
-     ln -fs $f $HOME/bin
-  done
-  # update bashrc
-  grep PS1 $HOME/.bashrc >/dev/null
-  if [ $? -ne 0 ]
-  then info "Updating .bashrc"
-       cp $GitRepo/env/bashrc $HOME/.bashrc 
-  fi
-  info "Relog if needed"
-  quit
-}
-
 
 # ------------------------------------------
 # vagrant tools
@@ -500,16 +468,26 @@ function getDockerImg {
   [[ $# -eq 0 ]] && usage
   DockerImg=$1
   dockerCheck
-  getGitRepo
-  DockerDir=$GitRepo/docker/$DockerImg
+  if [[ -d $1 ]]
+  then DockerDir=$1
+       [[ $DockerDir == . ]] && DockerDir=$(pwd)
+       DockerImg=${DockerDir##*/}
+  else [[ -d $HOME/docker ]]  || die "Missing $HOME/docker"
+       DockerDir=$HOME/docker/$DockerImg
+  fi
   if [[ ! -d $DockerDir ]] 
   then [[ $Command == build ]] && die "no docker repository named '$DockerImg'"
     die "Command '$Command' not supported; and no docker repository named '$DockerImg'"
   fi
   [[ -f $DockerDir/Dockerfile ]] || die "No file $DockerDir/Dockerfile"
+  # Using the image name for container's name
+  DockerContainer=${DockerImg}
+  # as  well for the volume name
+  DockerVolume=${DockerImg}
 }
 
 function dockerBuild {
+  info "Building image from $DockerDir"
   id=$(docker images -q ${DockerImg} |head -1)
   if [[ -n $id ]]
   then warn "Image $DockerImg [$id] already built"
@@ -517,7 +495,7 @@ function dockerBuild {
        _docker rmi -f $id
   fi
   egrep -q '^VOLUME \[' $DockerDir/Dockerfile && die "$TOOL_NAME does not support VOLUME in JSON format"
-  vers=$(egrep -i "^ENV ${DockerImg}[A-Z]*_VERSION" $DockerDir/Dockerfile | awk '{print $3}')
+  vers=$(egrep -i "^ENV ${DockerImg/alpine-}[A-Z]*_VERSION" $DockerDir/Dockerfile | awk '{print $3}')
   [[ -n $vers ]] || warn "No VERSION found in Dockerfile"
   # check if this a  server or an intermediate image
   egrep -q 'entrypoint.sh' $DockerDir/Dockerfile
@@ -542,7 +520,7 @@ function dockerBuild {
   tags="-t $DockerImg:latest"
   [[ -n $vers ]] && tags="$tags -t $DockerImg:$vers"
 
-  buildargs="--build-arg http_proxy=$Proxy --build-arg https_proxy=$Proxy --build-arg no_proxy=${NO_PROXY:-127.0.0.1}"
+  buildargs="--build-arg http_proxy=$Proxy --build-arg https_proxy=$Proxy --build-arg no_proxy=${PROXY_BYPASS:-127.0.0.1}"
   for arg in $(egrep "^ARG " $DockerDir/Dockerfile | sed 's/ARG \([A-Z_]*\)=.*/\1/') 
   do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
   done
@@ -556,20 +534,29 @@ function dockerRun {
   args=$*
   if [[ $# -eq 0 && $(grep -c '/entrypoint.sh' $DockerDir/Dockerfile) -eq 1 ]]
   then # server mode
-      id=$(docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
+      id=$(docker ps -a | grep "${DockerContainer}\$" | awk '{print $1}')
        if [[ -n $id ]]
-       then _docker ps | grep -q "$DockerImg\$"
+       then _docker ps | grep -q "${DockerContainer}\$"
 	    if [ $? -eq 0 ]
 	    then warn "Container $DockerImg [$id] already running"
 	    else _docker start $id
             fi
 	    return
        fi
-       opts="-d --name=$DockerImg --network=$DOCKER_NETWORK"
+       opts="-d --name=${DockerContainer} --network=$DOCKER_NETWORK"
        volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
-       [[ -n $volume ]] && opts="$opts --mount source=${DockerImg},target=$volume"
+       [[ -n $volume ]] && opts="$opts --mount source=${DockerVolume},target=$volume"
        for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | cut -c 8-)
-       do opts="$opts -p $port:$port"
+       do grep -q '[$]' <<<$port
+	  if [[ $? -ne 0 ]]
+	  then opts="$opts -p $port:$port"
+	  else
+	    for ev in $(egrep '^ENV ' $DockerDir/Dockerfile | awk '{print "port=${port/\\$\\{" $2 "\\}/" $3 "}" }')
+	    do eval $ev
+            done
+	    # echo "DEBUG: port=$port"
+	    opts="$opts -p $port:$port"
+	  fi
        done
        for e in $(env | egrep '^[A-Z_]*=' | egrep -v '^PATH=' | cut -d= -f1)
        do egrep -q "^ENV $e " $DockerDir/Dockerfile && opts="$opts -e $e=${!e}"
@@ -581,7 +568,7 @@ function dockerRun {
        opts="-i --rm --network=$DOCKER_NETWORK"
        if [[ $DockerMount -eq 1 ]] 
        then volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
-	    [[ -n $volume ]] && opts="$opts --mount source=${DockerImg},target=$volume"
+	    [[ -n $volume ]] && opts="$opts --mount source=${DockerVolume},target=$volume"
        fi
      [[ $DockerTty -eq 1 ]] && opts="-t $opts"       
   fi
@@ -589,26 +576,22 @@ function dockerRun {
 }
 
 function dockerStop {
-  id=$(docker ps  | grep "$DockerImg\$" | awk '{print $1}')
+  id=$(docker ps  | grep "${DockerContainer}\$" | awk '{print $1}')
   if [[ -z $id ]]
-  then warn "Container $DockerImg not running"
+  then warn "Container ${DockerContainer} not running"
+       return 1
   else _docker stop $id
   fi
 }
 
 
 function dockerRm {
-  id=$(docker ps -a | grep "$DockerImg\$" | awk '{print $1}')
-  if [[ -z $id ]] 
-  then warn "Container $DockerImg not found"
-  else _docker ps  | grep -q "$DockerImg\$"
-       if [ $? -eq 0 ]
-       then _docker stop $id
-	    sleep 2 
-       fi
-       _docker rm $id
-       volume=${DockerImg}
-       docker volume ls | grep -q $volume && _docker volume rm $volume
+  dockerStop
+  if [[ $? -eq 0 ]]
+  then
+    sleep 2 
+    _docker rm $id
+    docker volume ls | grep -q $DockerVolume && _docker volume rm $DockerVolume
   fi
 }
 
@@ -650,7 +633,7 @@ function dockerTest {
   dockerRun
   # wating 10 sec. for server to start
   sleep 10
-  docker ps | grep -q " $DockerImg "
+  docker ps | grep -q " ${DockerContainer}"
   if [ $? -ne 0 ]
   then docker logs $DockerImg
        die "Server failed to start"
@@ -782,7 +765,6 @@ init -fv $@
 
 case $Command in
   help)     usage;;
-  env)      setupEnv;;
   b|build)  getDockerImg $Arguments; dockerBuild;;
   run)      getDockerImg $Arguments; dockerRun ${Arguments/$DockerImg/};;
   rm)       getDockerImg $Arguments; dockerRm;;

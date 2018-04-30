@@ -75,6 +75,10 @@
   service: name=docker state=started enabled=yes
   become: true
 
+- name: install netdata
+  command: bash <(curl -Ss https://my-netdata.io/kickstart-static64.sh)
+  become: true
+
 - name: PLEASE RESTART SERVER AFTER DEPLOYMENT!
   set_fact:
     dummy: 1

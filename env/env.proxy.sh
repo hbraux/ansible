@@ -1,7 +1,7 @@
 # proxy handling
 
 # ------------------------------------------
-# Environment variables (to set in env.LOCAL.sh)
+# Environment variables (to set in env.CLIENT.sh)
 # ------------------------------------------
 
 # company proxy server (mandatory)

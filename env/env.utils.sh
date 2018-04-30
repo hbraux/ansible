@@ -1,24 +1,6 @@
 # BASH Utils (prompts, tools, helper)
 
 # -----------------------------------------------------------------------------
-# Prompt
-# -----------------------------------------------------------------------------
-
-PS1='\[\033[1;32m\]\u@\h\[\033[0;34m\][$ORACLE_SID]:\w \$ \[\033[0m\]'
-
-# -----------------------------------------------------------------------------
-# Aliases
-# -----------------------------------------------------------------------------
-alias h=history
-alias rmtilde='find . -name "*~" -exec rm {} \;'
-alias sf="$HOME/bin/syncFile.sh"
-alias off='sudo poweroff'
-alias infra="$HOME/bin/infra.sh"
-alias vps='sudo mkdir -p -m 777 /var/run/stunnel && sudo systemctl start stunnel.service ; ssh -p8443 localhost'
-alias imgdesc="docker inspect --format='{{range \$k,\$v:=.Config.Labels}}{{\$k}}: {{println \$v}}{{end}}'"
-
-
-# -----------------------------------------------------------------------------
 # Internal functions
 # -----------------------------------------------------------------------------
 function _info {

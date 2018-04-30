@@ -3,7 +3,7 @@ FROM alpine-glibc
 # can be overriden to a local http cache
 ARG URL_DOWNLOAD=""
 
-ARG CONDA_PACKAGES=matplotlib,pandas
+ARG CONDA_PACKAGES=requests
 ARG CONDA_FORGE_PACKAGES=python-avro
 
 ENV LANG C.UTF-8
