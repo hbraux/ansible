@@ -498,7 +498,7 @@ function dockerBuild {
   vers=$(egrep -i "^ENV ${DockerImg/alpine-}[A-Z]*_VERSION" $DockerDir/Dockerfile | awk '{print $3}')
   [[ -n $vers ]] || warn "No VERSION found in Dockerfile"
   # check if this a  server or an intermediate image
-  egrep -q 'entrypoint.sh' $DockerDir/Dockerfile
+  egrep -q '^ENTRYPOINT' $DockerDir/Dockerfile
   if [[ $? -eq 0 ]]
   then 
     egrep -q '^LABEL Description' $DockerDir/Dockerfile || \
@@ -532,7 +532,7 @@ function dockerBuild {
 
 function dockerRun {
   args=$*
-  if [[ $# -eq 0 && $(grep -c '/entrypoint.sh' $DockerDir/Dockerfile) -eq 1 ]]
+  if [[ $# -eq 0 && $(egrep -c '^ENTRYPOINT' $DockerDir/Dockerfile) -eq 1 ]]
   then # server mode
       id=$(docker ps -a | grep "${DockerContainer}\$" | awk '{print $1}')
        if [[ -n $id ]]
@@ -586,10 +586,12 @@ function dockerStop {
 
 
 function dockerRm {
-  dockerStop
-  if [[ $? -eq 0 ]]
-  then
-    sleep 2 
+  id=$(docker ps  -a | grep "${DockerContainer}\$" | awk '{print $1}')
+  if [[ -z $id ]]
+  then warn "No container ${DockerContainer}"
+       return 1
+  else 
+    _docker stop $id
     _docker rm $id
     docker volume ls | grep -q $DockerVolume && _docker volume rm $DockerVolume
   fi
@@ -707,7 +709,6 @@ function ansibleRun {
   getDomain
   getHostIp
   checkSshConf
-  checkSiteDir
   
   # loop on pattern
   while [ $# -gt 0 ]
@@ -772,7 +773,7 @@ case $Command in
   test)     getDockerImg $Arguments; dockerTest;;
   l|logs)   getDockerImg $Arguments; dockerLogs;;
   i|info)   getDockerImg $Arguments; dockerInfo;;
-  cp)       getDockerImg $Arguments; dockerCopy;;
+  copy)     getDockerImg $Arguments; dockerCopy;;
   d|dock)   dockerStatus;;
   clean)    dockerClean ;;
   status)   infraStatus;;
