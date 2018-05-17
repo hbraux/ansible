@@ -2,17 +2,15 @@
 # General purpose infra management tool (to be run on Centos/7)
 # * install local (admin) environment
 # * deploy and manage VM on vagrant/VirtualBox
-# * build and run Docker images
 # Prerequisites (windows)
 # 1) install VirtualBox, Vagrant, and Freesshd with SFTP 
 # 2) install Vagrant boxes for CentOS7 and Alpine3.6 
 
 TOOL_NAME=infra
-TOOL_VERS=0.0.3
-
+TOOL_VERS=0.0.4
 
 ###############################################################################
-# BEGIN: common.sh 2.1
+# BEGIN: common.sh 2.3
 ###############################################################################
 # Warning versions 2.x are not compatible with 1.x
 
@@ -37,7 +35,9 @@ declare TmpFile=$HOME/tmp.${TOOL_NAME}_f$$
 declare TmpDir=$HOME/tmp.${TOOL_NAME}_d$$
 
 # Log file (appending)
-declare LogFile=$HOME/logs/${TOOL_NAME}.log
+declare LogFile=${TOOL_NAME}.log
+# by defaults logs are in current directory unless there's a logs directory
+[[ -d $HOME/logs ]] && LogFile=$HOME/logs/$LogFile
 
 # command line parameters
 declare Command=
@@ -48,7 +48,7 @@ declare Arguments=
 # -----------------------------------------------------------------------------
 
 # file cheksum, updated when commiting in Git
-_MD5SUM="b254e3b5665a2eed04a7a5e1563e0525"
+_MD5SUM="c20e938c5093cba716cd3f746585497e"
 
 # config file
 declare _CfgFile=$(dirname $0)/.${TOOL_NAME}.cfg
@@ -69,20 +69,20 @@ function _log {
 }
 
 function debug {
-  opt D || return
-  opt L && _log DEBUG $* && return
+  [[ ${_Opts[D]} -eq 1 ]] || return
+  [[ ${_Opts[L]} -eq 1 ]] && _log DEBUG $* && return
   echo -e "${BLUE}# $*${BLACK}"
 }
 function info {
-  opt L && _log INFO $* && return
+  [[ ${_Opts[L]} -eq 1 ]] && _log INFO $* && return
   echo -e "${BOLD}$*${BLACK}"
 }
 function warn {
-  opt L && _log WARN $* && return
+  [[ ${_Opts[L]} -eq 1 ]] && _log WARN $* && return
   echo -e "${PURPLE}WARNING: $*${BLACK}"
 }
 function error {
-  opt L &&  _log ERROR $* 
+  [[ ${_Opts[L]} -eq 1 ]] &&  _log ERROR $* 
   # always print errors to stdout
   echo -e "${RED}ERROR: $*${BLACK}"
 }
@@ -204,7 +204,6 @@ VAGRANT_PROVIDER=virtualbox
 DEFAULT_MEMORY=1024
 DEFAULT_CPU=1
 DEFAULT_OS=centos/7
-DOCKER_NETWORK=${DOCKER_NETWORK:-udn}  # for DNS purpose
 
 # ------------------------------------------
 # Parameters (loaded from Config file)
@@ -214,7 +213,6 @@ DOCKER_NETWORK=${DOCKER_NETWORK:-udn}  # for DNS purpose
 # Global variables
 # ------------------------------------------
 
-declare -i DockerCommand=1
 declare GitRepo
 declare Proxy
 declare ServerType
@@ -227,12 +225,6 @@ declare Domain
 declare VagrantStatus=$HOME/.vagrant
 declare VagrantId
 declare -i VagrantChanged=0
-declare DockerDir
-declare DockerImg
-declare DockerContainer
-declare DockerVolume
-declare -i DockerTty=1
-declare -i DockerMount=0
 declare SquidIP
 
 # ------------------------------------------
@@ -254,16 +246,6 @@ commands:
  off     <pattern> : shutdown server(s)
 
  <pattern> is a server hostname (or substring) or an Ansible subset
-
- dock              : docker status (images, containers,.)
- build   <image>   : build a docker image
- [run]   <image>...: run a docker image (run is optional). Add 'help' for info
- stop    <image>   : stop a docker image
- rm      <image>   : remove a docker container (stop it if needed)
- test    <image>   : test a docker image
- logs    <image>   : docker logs
- clean             ! docker clean
-
 "
   quit
 }
@@ -443,243 +425,6 @@ function startServer {
 }
 
 # ------------------------------------------
-# docker tools
-# ------------------------------------------
-
-# small helper to display the docker command being run
-function _docker {
-  info "\$ docker $*"
-  docker $*
-}
-
-function dockerCheck {
-  getProxy
-  which docker >/dev/null 2>&1 || die "Docker not installed"
-  [[ -n $DOCKER_HOST ]] || die "DOCKER_HOST not defined"
-  ping -c1 $DOCKER_HOST >/dev/null 2>&1
-  [[ $? -eq 0 ]] || die "Docker host $DOCKER_HOST not reachable"
-  egrep -q '^[0-9]+' <<<$DOCKER_HOST || die "\$DOCKER_HOST must be an IP"
-  _docker network ls | grep -q $DOCKER_NETWORK 
-  [[ $? -eq 0 ]] || _docker network create --driver bridge $DOCKER_NETWORK || die
-
-}
-
-function getDockerImg {
-  [[ $# -eq 0 ]] && usage
-  DockerImg=$1
-  dockerCheck
-  if [[ -d $1 ]]
-  then DockerDir=$1
-       [[ $DockerDir == . ]] && DockerDir=$(pwd)
-       DockerImg=${DockerDir##*/}
-  else [[ -d $HOME/docker ]]  || die "Missing $HOME/docker"
-       DockerDir=$HOME/docker/$DockerImg
-  fi
-  if [[ ! -d $DockerDir ]] 
-  then [[ $Command == build ]] && die "no docker repository named '$DockerImg'"
-    die "Command '$Command' not supported; and no docker repository named '$DockerImg'"
-  fi
-  [[ -f $DockerDir/Dockerfile ]] || die "No file $DockerDir/Dockerfile"
-  # Using the image name for container's name
-  DockerContainer=${DockerImg}
-  # as  well for the volume name
-  DockerVolume=${DockerImg}
-}
-
-function dockerBuild {
-  info "Building image from $DockerDir"
-  id=$(docker images -q ${DockerImg} |head -1)
-  if [[ -n $id ]]
-  then warn "Image $DockerImg [$id] already built"
-       opt f || return
-       _docker rmi -f $id
-  fi
-  egrep -q '^VOLUME \[' $DockerDir/Dockerfile && die "$TOOL_NAME does not support VOLUME in JSON format"
-  vers=$(egrep -i "^ENV ${DockerImg/alpine-}[A-Z]*_VERSION" $DockerDir/Dockerfile | awk '{print $3}')
-  [[ -n $vers ]] || warn "No VERSION found in Dockerfile"
-  # check if this a  server or an intermediate image
-  egrep -q '^ENTRYPOINT' $DockerDir/Dockerfile
-  if [[ $? -eq 0 ]]
-  then 
-    egrep -q '^LABEL Description' $DockerDir/Dockerfile || \
-      warn "No Description Label in Dockerfile"
-    egrep -q '^LABEL Usage' $DockerDir/Dockerfile || \
-      warn "No Usage Label in Dockerfile"
-  fi
-  if [ -f  $DockerDir/TOOLS ]
-  then mkdir -p $DockerDir/tools
-       for tool in $(cat $DockerDir/TOOLS)
-       do [[ -f $HOME/bin/$tool ]] || die "Cannot find $HOME/bin/$tool"
-	  diff $HOME/bin/$tool $DockerDir/tools/$tool >/dev/null
-	  if [[ $? -ne 0 ]]
-	  then info "Updating $DockerDir/tools/$tool"
-               cp -f $HOME/bin/$tool $DockerDir/tools/
-	  fi
-       done
-  fi
-  tags="-t $DockerImg:latest"
-  [[ -n $vers ]] && tags="$tags -t $DockerImg:$vers"
-
-  buildargs="--build-arg http_proxy=$Proxy --build-arg https_proxy=$Proxy --build-arg no_proxy=${PROXY_BYPASS:-127.0.0.1}"
-  for arg in $(egrep "^ARG " $DockerDir/Dockerfile | sed 's/ARG \([A-Z_]*\)=.*/\1/') 
-  do [[ -n ${!arg} ]] && buildargs="$buildargs --build-arg $arg=${!arg}"
-  done
-  _docker build $tags $buildargs $DockerDir |tee $LogFile
-  info "$ docker images .."
-  docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
-}
-
-
-function dockerRun {
-  args=$*
-  if [[ $# -eq 0 && $(egrep -c '^ENTRYPOINT' $DockerDir/Dockerfile) -eq 1 ]]
-  then # server mode
-      id=$(docker ps -a | grep "${DockerContainer}\$" | awk '{print $1}')
-       if [[ -n $id ]]
-       then _docker ps | grep -q "${DockerContainer}\$"
-	    if [ $? -eq 0 ]
-	    then warn "Container $DockerImg [$id] already running"
-	    else _docker start $id
-            fi
-	    return
-       fi
-       opts="-d --name=${DockerContainer} --network=$DOCKER_NETWORK"
-       volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
-       [[ -n $volume ]] && opts="$opts --mount source=${DockerVolume},target=$volume"
-       for port in $(egrep '^EXPOSE ' $DockerDir/Dockerfile | cut -c 8-)
-       do grep -q '[$]' <<<$port
-	  if [[ $? -ne 0 ]]
-	  then opts="$opts -p $port:$port"
-	  else
-	    for ev in $(egrep '^ENV ' $DockerDir/Dockerfile | awk '{print "port=${port/\\$\\{" $2 "\\}/" $3 "}" }')
-	    do eval $ev
-            done
-	    # echo "DEBUG: port=$port"
-	    opts="$opts -p $port:$port"
-	  fi
-       done
-       for e in $(env | egrep '^[A-Z_]*=' | egrep -v '^PATH=' | cut -d= -f1)
-       do egrep -q "^ENV $e " $DockerDir/Dockerfile && opts="$opts -e $e=${!e}"
-       done
-       # WA for NIFI-4761
-       [[ $DockerImg == nifi ]] && opts="$opts -h nifi"
-       args=start
-  else # command mode
-       opts="-i --rm --network=$DOCKER_NETWORK"
-       if [[ $DockerMount -eq 1 ]] 
-       then volume=$(egrep '^VOLUME' $DockerDir/Dockerfile | awk '{print $2}')
-	    [[ -n $volume ]] && opts="$opts --mount source=${DockerVolume},target=$volume"
-       fi
-     [[ $DockerTty -eq 1 ]] && opts="-t $opts"       
-  fi
-  _docker run $opts $DockerImg $args
-}
-
-function dockerStop {
-  id=$(docker ps  | grep "${DockerContainer}\$" | awk '{print $1}')
-  if [[ -z $id ]]
-  then warn "Container ${DockerContainer} not running"
-       return 1
-  else _docker stop $id
-  fi
-}
-
-
-function dockerRm {
-  id=$(docker ps  -a | grep "${DockerContainer}\$" | awk '{print $1}')
-  if [[ -z $id ]]
-  then warn "No container ${DockerContainer}"
-       return 1
-  else 
-    _docker stop $id
-    _docker rm $id
-    docker volume ls | grep -q $DockerVolume && _docker volume rm $DockerVolume
-  fi
-}
-
-function dockerStatus {
-  dockerCheck
-  opt v 
-  if [[ $? -eq 0 ]]
-  then 
-    _docker images
-    _docker ps -a
-  else 
-    info "$ docker images .."
-    docker images --format 'table{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}' --filter=reference='*:[0-9]*'
-    info "$ docker ps .."
-    docker ps -a  --format 'table{{.Image}}:{{.Names}}\t{{.ID}}\t{{.Status}}'
-  fi
-  _docker volume ls
-}
-
-function dockerClean {
-  dockerCheck
-  _docker container prune -f
-  for vol in $(docker volume ls -q)
-  do grep -q "[0-9a-f]\{64\}" <<<$vol && _docker volume rm $vol
-  done
-  ids=$(docker images -f "dangling=true" -q)
-  [[ -n $ids ]] && _docker rmi -f $ids
-  echo
-  dockerStatus
-}
-
-function dockerTest {
-  testfile=$DockerDir/test-server.sh
-  [[ -f $testfile ]] || die "No file $testfile"
-  dockerRm 
-  dockerBuild
-  dockerInfo
-  info "\nStarting $DockerImg\n------------------------------------------"
-  dockerRun
-  # wating 10 sec. for server to start
-  sleep 10
-  docker ps | grep -q " ${DockerContainer}"
-  if [ $? -ne 0 ]
-  then docker logs $DockerImg
-       die "Server failed to start"
-  fi
-  # execute test file
-  info "\nTesting $DockerImg health\n------------------------------------------"
-  DockerTty=0 DockerMount=1 source $testfile |& tee $TmpFile || die
-  grep -qi "exception \|error " $TmpFile
-  [[ $? -eq 0 ]] && die 
-  # check persistence (volume)
-  testfile=$DockerDir/test-volume.sh
-  if [[ -f $testfile ]] 
-  then info "\nTesting $DockerImg persistence\n------------------------------------------"
-       dockerStop
-       sleep 1
-       dockerRun
-       sleep 5
-       DockerTty=0 source $testfile  || die
-  fi
-  dockerRm
-  info "\nTESTING OK"
-}
-
-function dockerLogs {
-  _docker logs $DockerImg
-} 
-
-function dockerInfo {
-  # output labels
-  docker inspect --format='{{range $k,$v:=.Config.Labels}}{{$k}}: {{println $v}}{{end}}' $DockerImg
-}
-
-
-function dockerCopy {
-  [[ -n $DOCKER_COPY_HOST ]]  || die "DOCKER_COPY_HOST not defined"
-  info "$ docker save $DockerImg"
-  docker save $DockerImg >$TmpFile
-  info "($DOCKER_COPY_HOST) $ docker load -i .."
-  DOCKER_HOST=$DOCKER_COPY_HOST docker load -i $TmpFile
-  DOCKER_HOST=$DOCKER_COPY_HOST docker images
-  rm $TmpFile
-}
-  
-# ------------------------------------------
 # Ansible tools
 # ------------------------------------------
 
@@ -766,26 +511,12 @@ init -fv $@
 
 case $Command in
   help)     usage;;
-  b|build)  getDockerImg $Arguments; dockerBuild;;
-  run)      getDockerImg $Arguments; dockerRun ${Arguments/$DockerImg/};;
-  rm)       getDockerImg $Arguments; dockerRm;;
-  stop)     getDockerImg $Arguments; dockerStop;;
-  test)     getDockerImg $Arguments; dockerTest;;
-  l|logs)   getDockerImg $Arguments; dockerLogs;;
-  i|info)   getDockerImg $Arguments; dockerInfo;;
-  copy)     getDockerImg $Arguments; dockerCopy;;
-  d|dock)   dockerStatus;;
-  clean)    dockerClean ;;
   status)   infraStatus;;
-  on)       DockerCommand=0;;
-  off)      DockerCommand=0;;
-  deploy)   DockerCommand=0;;
-  destroy)  DockerCommand=0;;
-  *) getDockerImg $Command; dockerRun $Arguments;;
+  on)       ansibleRun $Arguments;;
+  off)      ansibleRun $Arguments;;
+  deploy)   ansibleRun $Arguments;;
+  destroy)  ansibleRun $Arguments;;
+  *)        die "Unknown command $Command "
 esac
-
-[[ $DockerCommand -eq 0 ]] || quit
-[ $# -eq 0 ] && usage
-ansibleRun $Arguments
 
 quit
