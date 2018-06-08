@@ -269,8 +269,7 @@ function getDomain {
 function getProxy {
   [[ -n $Proxy ]] && return
   if [[ -n $PROXY_SQUID ]] 
-  then SquidIP=$(grep $PROXY_SQUID /etc/hosts | cut -d\  -f1 )
-       Proxy=http://$SquidIP:${PROXY_PORT-3128}  
+  then Proxy=http://$PROXY_SQUID:${PROXY_PORT-3128}  
   fi
   Proxy=${Proxy:-$http_proxy}
   export http_proxy=
@@ -317,16 +316,20 @@ function uploadVagrantFile {
   ServerOS=$(grep $ServerType $HostFile |grep 'os=' | sed 's/.*os=//' | awk '{print $1}')
   [[ -n $ServerOS ]] || ServerOS=$DEFAULT_OS
   getGitRepo
-  if [ 
-  cat $GitRepo/ansible/VagrantFile | \
-      sed -e "s~@ServerType@~$ServerType~g" \
-	  -e "s~@ServerCount@~$ServerCount~g" \
-	  -e "s~@ServerMemory@~$ServerMemory~g" \
-	  -e "s~@ServerCpu@~$ServerCpu~g" \
-	  -e "s~@ServerOS@~$ServerOS~g" \
-	  -e "s~@Domain@~$Domain~g" \
-	  -e "s~@VagrantData@~$DEPLOY_VAGRANT~g" \
-	  -e "s~@ServerIp@~$ServerIP~g" >VagrantFile || die
+  if [[ -f $GitRepo/desc/$ServerType.txt ]]
+  then ServerDesc=$(cat $GitRepo/desc/$ServerType.txt | sed ':a;N;$!ba;s/\n/\\n/g')
+  else ServerDesc="VM created with infra.sh"
+  fi
+  cat $GitRepo/VagrantFile | \
+    sed -e "s~@ServerType@~$ServerType~g" \
+    -e "s~@ServerCount@~$ServerCount~g" \
+    -e "s~@ServerMemory@~$ServerMemory~g" \
+    -e "s~@ServerCpu@~$ServerCpu~g" \
+    -e "s~@ServerOS@~$ServerOS~g" \
+    -e "s~@Domain@~$Domain~g" \
+    -e "s~@VagrantData@~$DEPLOY_VAGRANT~g" \
+    -e "s~@Description@~$ServerDesc~g" \
+    -e "s~@ServerIp@~$ServerIP~g" >VagrantFile || die
   
   info "Uploading VagrantFile to $VAGRANT_PROVIDER host"
   sftp $HostIp:/$ServerType <<<$'put VagrantFile' >/dev/null || die
@@ -432,7 +435,7 @@ function startServer {
 function ansibleCheck {
   which ansible-playbook >/dev/null 2>&1 ||die "Ansible not installed"
   getGitRepo
-  HostFile=$GitRepo/ansible/hosts
+  HostFile=$GitRepo/hosts
   [[ -f $HostFile ]] || die "No file $HostFile"
   # override Ansible config
   if [[ ! -f $HOME/.ansible.cfg ]]
@@ -446,7 +449,7 @@ retry_files_enabled = False
 hash_behaviour = merge
 EOF
   fi
-  Playbook=$GitRepo/ansible/$1.yml
+  Playbook=$GitRepo/$1.yml
   [[ -f $Playbook ]] || die "No playbook file $Playbook"
 }
 

@@ -55,7 +55,7 @@ docker1.hostonly.com cpu=4 mem=4096
 cassandra1.hostonly.com
 
 [hdp]
-hdp.hostonly.com cpu=4 mem=8192
+hdp1.hostonly.com cpu=4 mem=4096
 
 
 

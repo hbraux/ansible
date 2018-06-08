@@ -24,7 +24,7 @@
     regexp: '^ONBOOT='
     line: 'ONBOOT="no"'
   register: eth0
-  when: inventory_hostname not in groups['admin'] and inventory_hostname not in groups['docker']
+  when: inventory_hostname not in groups['admin'] and inventory_hostname not in groups['docker'] and inventory_hostname not in groups['hdp']
   become: true
 
 - name: restart network
@@ -41,6 +41,13 @@
     line: 'enabled=0'
   become: true
 
+- name: update mirror
+  lineinfile:
+    path: /etc/yum.repos.d/CentOS-Base.repo
+    regexp: '^#baseurl=.*/os/.*'
+    line: "{{ global.mirrors.centos }}/centos/$releasever/os/$basearch/"
+  become: true
+
 - name: update /etc/hosts from template
   template:
     src: hosts.j2
@@ -54,6 +61,5 @@
   yum:
     name: '*'
   environment:  "{{ global.proxyenv }}"
-  when: check_hosts | failed
   become: true
 
