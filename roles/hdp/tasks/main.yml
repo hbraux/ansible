@@ -1,0 +1,13 @@
+- name: add datastax repo
+  yum_repository:
+    name: datastax
+    description: DataStax Repo for Apache Cassandra
+    baseurl: http://rpm.datastax.com/community
+  become: true
+    
+- name: yum install {{ cassandra.module }}
+  yum:
+    name: "{{ cassandra.module }}"
+  environment:  "{{ global.proxyenv }}"
+  become: true
+

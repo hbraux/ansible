@@ -317,6 +317,7 @@ function uploadVagrantFile {
   ServerOS=$(grep $ServerType $HostFile |grep 'os=' | sed 's/.*os=//' | awk '{print $1}')
   [[ -n $ServerOS ]] || ServerOS=$DEFAULT_OS
   getGitRepo
+  if [ 
   cat $GitRepo/ansible/VagrantFile | \
       sed -e "s~@ServerType@~$ServerType~g" \
 	  -e "s~@ServerCount@~$ServerCount~g" \

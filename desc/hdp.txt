@@ -1,0 +1,8 @@
+Hadoop Hortonworks HDP2.6 secured
+
+Add this line to your Windows hosts file:
+192.168.56.14 hdp1.hostonly.com hdp1
+
+Connect with putty as user "hdp" (password "hdp"). This user can run sudo password less.
+
+if putty connection does not work, VirtualBox may have assigned new IPs which are not detected by Linux. Login in console and update file /etc/sysconfig/network-scripts/ifcfg-eth0 by replacing HWADDR value with the one displayed in VirtualBox. Then reboot

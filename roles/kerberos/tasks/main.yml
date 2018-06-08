@@ -1,0 +1,8 @@
+- name: yum install Kerberos
+  yum:
+    name: "{{ item }}"
+  environment:  "{{ global.proxyenv }}"
+  with_items:
+    - krb5-server
+    - krb5-libs
+  become: true
