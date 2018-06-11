@@ -1,8 +1,54 @@
-- name: yum install Kerberos
+- name: install kerberos
   yum:
     name: "{{ item }}"
   environment:  "{{ global.proxyenv }}"
   with_items:
     - krb5-server
     - krb5-libs
+    - krb5-workstation
   become: true
+
+- name: update krb5.conf
+  template:
+    src: krb5.conf.j2
+    dest: /etc/krb5.conf
+  become: true
+
+- name: update kdc.conf
+  lineinfile:
+    path: /var/kerberos/krb5kdc/kdc.conf
+    regexp: '^ EXAMPLE.COM = \{'
+    line: "{{ kerberos.realm }} = {"
+    backrefs: yes
+  become: true
+
+- name: Check if database is set
+  stat: path=/var/kerberos/krb5kdc/principal
+  register: krb_file
+
+- name: Create the Kerberos database
+  shell: echo -e "{{ kerberos.password }}\n{{ kerberos.password }}" | kdb5_util create -s
+  become: true
+  when: not krb_file.stat.exists
+
+- name: Create admin user
+  shell: echo -e "{{ kerberos.password }}\n{{ kerberos.password }}" | kadmin.local  -q "addprinc {{ kerberos.user }}/admin"
+  become: true 
+  when: not krb_file.stat.exists
+
+- name: start krb5kdc
+  service:
+    name: krb5kdc
+    state: started
+    enabled: true
+  become: true
+
+- name: start kadmin
+  service:
+    name: kadmin
+    state: started
+    enabled: true
+  become: true
+
+
+

@@ -1,3 +1,6 @@
 kerberos:
-  passwd: admin
+  realm: HOSTONLY.COM
+  user: admin
+  password: nimda
+
 

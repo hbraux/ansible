@@ -1,0 +1,7 @@
+mariadb:
+  version: 10.3
+  root_password: toor
+  user: dbuser
+  password: dbuser123
+  connector_url: https://downloads.mariadb.com/Connectors/java/connector-java-2.2.5/mariadb-java-client-2.2.5.jar
+

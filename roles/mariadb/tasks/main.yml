@@ -1,0 +1,64 @@
+- name: install MariaDB repo
+  yum_repository:
+    name: MariaDB
+    description: MariaDB 10.3 CentOS repository
+    baseurl: "http://yum.mariadb.org/{{ mariadb.version }}/centos7-amd64"
+    gpgcheck: no
+  environment:  "{{ global.proxyenv }}"
+  become: true
+
+- name: install mariadb
+  yum:
+    name: MariaDB-server
+  environment:  "{{ global.proxyenv }}"
+  become: true
+
+- name: check that mariadb is running
+  service:
+    name: mariadb
+    state: started
+  become: true
+  
+- name: install MySQL-python
+  yum:
+    name: MySQL-python
+  environment:  "{{ global.proxyenv }}"
+  become: true
+
+- name: downloading connector
+  get_url:
+    url: "{{ mariadb.connector_url }}"
+    dest: /usr/share/java
+  environment: "{{ global.proxyenv }}"
+  become: true
+
+- name: Check if .my.cnf exists
+  stat: path=/root/.my.cnf
+  register: cnf_file
+  become: true
+
+- name: Update MariaDB root password 
+  mysql_user:
+    name: root
+    host: localhost
+    password: "{{ mariadb.root_password }}"
+    state: present
+  become: true
+  when: not cnf_file.stat.exists
+
+- name: create .my.cnf
+  template:
+    src: my.cnf.j2
+    dest: /root/.my.cnf
+  become: true
+  when: not cnf_file.stat.exists
+
+- name: create user "{{ mariadb.user }}"
+  mysql_user:
+    name: "{{ mariadb.user }}"
+    host: localhost
+    password: "{{ mariadb.password }}"
+    state: present
+  become: true
+
+

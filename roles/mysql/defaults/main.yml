@@ -1,4 +1,0 @@
-mysql:
-  module: mysql-server
-  extra: mysql-connector-java 
-  password: root
