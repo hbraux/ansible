@@ -58,12 +58,27 @@
   when : not check_file.stat.exists
   become: true
 
-- name : check for ambari-server to be up
+- name: check for ambari-server to be up
   wait_for:
     host: 127.0.0.1
     port: 8080
     delay: 10
   when : not check_file.stat.exists
+
+- name: disable Certification check for Python
+  lineinfile:
+    path: /etc/python/cert-verification.cfg
+    regexp: "^verify="
+    line: "verify=disable"
+  become: true
+
+- name: fix ambari-agent.ini
+  lineinfile:
+    path: /etc/ambari-agent/conf/ambari-agent.ini
+    regexp: "^force_https_protocol="
+    insertafter: "[security]"
+    line: "force_https_protocol=PROTOCOL_TLSv1_2"
+  become: true
 
 - name : start ambari agent
   service:

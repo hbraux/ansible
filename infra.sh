@@ -499,7 +499,7 @@ function ansibleRun {
     if [[ $runansible -eq 1 ]]
     then
       opts=""
-      opt v && opts="-v"
+      opt v && opts="-vvv"
       info "\$ ansible-playbook $Playbook --limit $pattern*.$Domain"
       ansible-playbook $opts $Playbook --limit "$pattern*.$Domain"
     fi

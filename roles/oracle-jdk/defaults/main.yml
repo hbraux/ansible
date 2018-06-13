@@ -1,6 +1,8 @@
 jdk:
   module: jdk
-  version: 8u152
+  version: 8u171
   build: "-linux-x64"
-  url: http://download.oracle.com/otn-pub/java/jdk/8u152-b16/aa0333dd3019491ca4f6ddbe78cdb6d0
+  url: http://download.oracle.com/otn-pub/java/jdk/8u171-b11/512cd62ec5174c3487ac17c61aaa89e8/jdk-8u171-linux-x64.rpm
+
+
 

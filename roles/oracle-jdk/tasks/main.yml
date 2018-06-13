@@ -37,9 +37,21 @@
   when:  not yum_check.results
   become: true
 
+- name: update alternatives
+  shell: update-alternatives --install /usr/bin/java java /usr/java/{{ jdk.module }}-{{ jdk.version }}-amd64/jre/bin/java 1
+  when:  not yum_check.results
+  become: true
+
 - name: cleanup file
   file:
     path: /tmp/{{ archive }}
     state: absent
-  when:  not yum_check.results
-  
+  when: not yum_check.results
+
+- name: install JCE
+  copy:
+    src: "{{ global.localhost.cache }}/UnlimitedJCEPolicyJDK8/local_policy.jar"
+    dest: /usr/java/jdk1.8.0_171-amd64/jre/lib/security/
+  become: true
+
+

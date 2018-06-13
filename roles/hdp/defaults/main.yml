@@ -1,6 +1,46 @@
 hdp:
-  version: HDP-2.6.4.0
-  tag: "2_6_4_0_91"
-  clusterid: HDP
-  url:  http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0
+  clusterid: sandbox
+  name: HDP-2.6.4
+  version: 2.6
+  subversion: 2.6.4.0-91
+  yumtag: "2_6_4_0_9a1"
+  url: http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0
+  password: admin
+  utils:
+    version: 1.1.0.22
+    url: http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.22/repos/centos7
+    
+# Using Ambari REST API to provision the cluster
+# See https://github.com/apache/ambari/tree/trunk/ambari-server/docs/api/v1
+# and https://community.hortonworks.com/articles/47170/automate-hdp-installation-using-ambari-blueprints.html
+# JSON structures are built from Ansible dictionnaries 
+api:
+  create_version:
+     VersionDefinition:
+       version_url: "file:/opt/HDP.xml"
+  create_blueprint:
+    Blueprints:
+      blueprint_name: ansible
+      stack_name: HDP
+      stack_version: "{{ hdp.version }}"
+    host_groups:
+      - name: hostgroup1
+        cardinality: 1
+        components:
+          - name: ZOOKEEPER_SERVER
+          - name: NAMENODE
+          - name: SECONDARY_NAMENODE
+          - name: DATANODE
+          - name: RESOURCEMANAGER
+          - name: NODEMANAGER
+          - name: HISTORYSERVER
+          - name: APP_TIMELINE_SERVER
+  create_cluster:
+    blueprint: ansible
+    default_password: "{{ hdp.password }}"
+    host_groups :
+      - name: hostgroup1
+        hosts:
+          -  fqdn: "{{ inventory_hostname }}" 
 
+  

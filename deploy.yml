@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: all_temp
   roles:
     - network
 
@@ -67,8 +67,9 @@
 
 - hosts: hdp
   roles:
-    - jdk
-    - kerberos
-    - postgresql
-    - ambari
+#    - jdk
+#    - kerberos
+#    - postgresql
+#    - ambari
     - hdp
+
