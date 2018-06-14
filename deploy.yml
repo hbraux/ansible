@@ -1,4 +1,4 @@
-- hosts: all_temp
+- hosts: all
   roles:
     - network
 

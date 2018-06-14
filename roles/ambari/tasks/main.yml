@@ -43,6 +43,10 @@
   when : not check_file.stat.exists
   become: true
 
+- name: enable security on ambari
+  shell:  ambari-server  setup-security --security-option=encrypt-passwords --master-key=key1 --master-key-persist
+  when : not check_file.stat.exists
+  become: true
 - name : check if ambari-server is installed
   wait_for:
     path: /opt/ambari/install.log

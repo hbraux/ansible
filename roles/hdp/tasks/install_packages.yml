@@ -1,0 +1,51 @@
+- name: install HDP dependencies
+  yum:
+    name: "{{ item }}"
+  environment:  "{{ global.proxyenv }}"
+  become: true
+  with_items:
+    - unzip
+    - net-tools
+
+# HDP Zookeper brings this useless dependency
+- name: copy fake redhat-lsb
+  copy:
+    src: redhat-lsb-4.1-27.el7.centos.1.x86_64.rpm
+    dest: /opt
+  become: true
+
+- name: install fake redhat-lsb
+  yum:
+    name: /opt/redhat-lsb-4.1-27.el7.centos.1.x86_64.rpm
+    state: present
+  become: true
+
+- name: install HDP repo
+  yum_repository:
+    name: HDP
+    description: HDP-{{ hdp.version }}
+    baseurl: "{{ hdp.url }}"
+    gpgcheck: no
+  environment:  "{{ global.proxyenv }}"
+  become: true
+
+- name: pre-install HDP packages to speedup cluster deployment
+  yum:
+    name: "{{item }}"
+  environment:  "{{ global.proxyenv }}"
+  become: true
+  with_items: "{{ hdp.packages }}"
+
+- name: adding proxy to YUM configuration
+  lineinfile:
+    path: /etc/yum.conf
+    regexp: "^proxy="
+    line: "proxy={{ global.proxyenv.http_proxy }}"
+  become: true
+
+- name: refresh yum
+  yum:
+    list: available
+  environment:  "{{ global.proxyenv }}"
+  become: true
+
