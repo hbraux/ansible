@@ -14,11 +14,12 @@
   with_items:
     - postgresql
     - postgresql-jdbc
+    - python-psycopg2
 
 - name: Init postgresql
   shell: postgresql-setup initdb
   when: (is_installed.results|length == 1) or (is_installed.results[1].yumstate != 'installed') 
-    
+
 - name: start postgresql
   service:
     name: postgresql

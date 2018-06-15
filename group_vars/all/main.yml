@@ -1,8 +1,6 @@
 global:
   localhost:
-    sitedir: "{{ lookup('env','HOME') + '/site.d' }}"
-    envdir: "{{ lookup('env','HOME') + '/env.d' }}"
-    clientdir: "{{ lookup('env','HOME') + '/client' }}"
+    clientdir: "{{ lookup('env','HOME') + '/client.d' }}"
     cache: "{{ lookup('env','HOME') + '/tmp' }}"
   proxyhost: "{{ lookup('env','PROXY_HOST') }}"
   proxyenv:

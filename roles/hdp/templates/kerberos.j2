@@ -3,7 +3,7 @@
     "Clusters": {
       "desired_config": {
         "type": "krb5-conf",
-        "tag": "{{ hdp.cluster.cfgtag }}",
+        "tag": "{{ hdp.cluster.kerberos.tag }}",
         "properties": {
           "domains":"",
           "manage_krb5_conf": "false",
@@ -17,13 +17,13 @@
     "Clusters": {
       "desired_config": {
         "type": "kerberos-env",
-        "tag": "{{ hdp.cluster.cfgtag }}",
+        "tag": "{{ hdp.cluster.kerberos.tag }}",
         "properties": {
           "kdc_type": "mit-kdc",
           "manage_identities": "true",
           "install_packages": "false",
           "encryption_types": "aes des3-cbc-sha1 rc4 des-cbc-md5",
-          "realm" : "{{ hdp.cluster.realm }}",
+          "realm" : "{{ hdp.cluster.kerberos.realm }}",
           "kdc_host" : "{{ inventory_hostname }}",
           "admin_server_host" : "{{ inventory_hostname }}",
           "executable_search_paths" : "/usr/bin, /bin",

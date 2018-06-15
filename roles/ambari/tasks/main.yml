@@ -2,7 +2,16 @@
   stat: path=/opt/ambari/install.log
   register: check_file
   become: true
-    
+
+- name: install dependencies
+  yum:
+    name: "{{ item }}"
+  environment:  "{{ global.proxyenv }}"
+  become: true
+  with_items:
+    - unzip
+    - net-tools
+
 - name: install Ambari repo
   yum_repository:
     name: ambari
@@ -43,15 +52,23 @@
   when : not check_file.stat.exists
   become: true
 
-- name: enable security on ambari
-  shell:  ambari-server  setup-security --security-option=encrypt-passwords --master-key=key1 --master-key-persist
-  when : not check_file.stat.exists
-  become: true
-- name : check if ambari-server is installed
+- name : wair for completion
   wait_for:
     path: /opt/ambari/install.log
     search_regex: "completed successfully"
   when : not check_file.stat.exists
+  become: true
+
+- name: enable security on ambari
+  shell:  ambari-server  setup-security --security-option=encrypt-passwords --master-key=key1 --master-key-persist
+  when : not check_file.stat.exists
+  become: true
+
+- name: enable PostgreSQL connector on ambari
+  shell: |
+    chmod 644 /usr/share/java/postgresql-jdbc.jar
+    ambari-server setup --jdbc-db=postgres --jdbc-driver=/usr/share/java/postgresql-jdbc.jar
+  when: not check_file.stat.exists
   become: true
 
 - name : start ambari server 

@@ -3,6 +3,7 @@
     name: "{{ client.user }}"
     password: "{{ client.password }}"
     group:  "{{ client.group }}"
+    groups:  "{{ client.groups }}"
   become: true
   
 - name: add local public key
@@ -12,27 +13,18 @@
     key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
   become: true
   
-- name: upload site files
-  copy:
-    src: "{{ global.localhost.sitedir }}"
-    dest: /home/{{ client.user }}
-    owner: "{{ client.user }}"
-    group: "{{ client.group }}"
-    mode: 0744
-  become: true
-  
-- name: update bashrc
+- name: update .bash_profile
   template:
-    src: bashrc.j2
-    dest: "/home/{{ client.user }}/.bashrc"
+    src: bash_profile.j2
+    dest: "/home/{{ client.user }}/.bash_profile"
     owner: "{{ client.user }}"
     group: "{{ client.group }}"
   become: true
 
 - name: upload client files
   copy:
-    src: "{{ global.localhost.clientdir }}"
-    dest: /home/{{ client.user }}
+    src: "{{ global.localhost.clientdir }}/"
+    dest: /home/{{ client.user }}/env.d/
     owner: "{{ client.user }}"
     group: "{{ client.group }}"
     mode: 0744
@@ -46,4 +38,36 @@
   notify:
     - restart sshd
   become: true
+
+- name: check if Kerberos is enabled
+  stat:
+    path: /etc/krb5.conf
+  register: file_krb5
+
+- name: register user {{ client.user }} on Kerberos 
+  shell: |
+    /sbin/kadmin.local -q "add_principal -pw {{ client.user }} {{ client.user }}"
+    touch /opt/.ansible_krb{{ client.user }}
+  args:
+    creates: /opt/.ansible_krb{{ client.user }}
+  when: file_krb5.stat.exists
+  become: true
+
+- name: create HDFS directory hdfs:/user/{{ client.user }}
+  shell: |
+    hdfs dfs -mkdir -p /user/{{ client.user }}/db /user/{{ client.user }}/work /user/{{ client.user }}/archive /user/{{ client.user }}/tmp /user/{{ client.user }}/staging
+    hdfs dfs -chown -R {{ client.user }}:{{ client.group }} /user/{{ client.user }}
+    touch /var/lib/hadoop-hdfs/.ansible_hdfs{{ client.user }}
+  args:
+    creates: /var/lib/hadoop-hdfs/.ansible_hdfs{{ client.user }}
+  when: file_krb5.stat.exists
+  become_user: hdfs
+  become: true
+
+
+    
+    
+
+
+
 

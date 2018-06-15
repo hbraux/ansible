@@ -1,0 +1,88 @@
+# see https://cwiki.apache.org/confluence/display/AMBARI/Adding+a+New+Service+to+an+Existing+Cluster
+
+- set_fact:
+    service: "{{ outer_item }}"
+
+- name: prepare API payload
+  set_fact:
+    api_add_service:
+      ServiceInfo:
+        service_name: "{{ service.name }}"
+        
+- name: add {{ service.name }} service to cluster {{ hdp.cluster.name }}
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services
+    method: POST
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: "{{ api_add_service | to_json }}"
+    status_code: 201
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: add components to {{ service.name }} service
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/{{ service.name }}/components/{{ item }}
+    method: POST
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    status_code: 201
+    force_basic_auth: yes
+    headers:
+      X-Requested-By: "ambari"
+  with_items: "{{ service.components }}"
+
+- name: prepare API payload
+  shell: echo "{\"host_components\":[{\"HostRoles\":{\"component_name\":\""{{ item }}"\"}}]}"
+  register: api_payloads
+  with_items: "{{ service.components }}"
+
+- name: register components on {{ inventory_hostname }}
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/hosts?Hosts/host_name={{ inventory_hostname }}
+    method: POST
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: "{{ item.stdout |to_json }}"
+    status_code: 201
+    force_basic_auth: yes
+    body_format: json
+    headers:
+      X-Requested-By: "ambari"
+  with_items: "{{ api_payloads.results }}"
+
+
+- name: install {{ service.name }} service
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/{{ service.name }}
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"ServiceInfo":{"state":"INSTALLED"}}'
+    status_code: 200
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: start {{ service.name }} service
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/{{ service.name }}
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"ServiceInfo":{"state":"STARTED"}}'
+    status_code: 202
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: wait for services to be ready
+  wait_for:
+    port: "{{ service.port }}"
+    host: "{{ inventory_hostname }}"
+    timeout: 600
+

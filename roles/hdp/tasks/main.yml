@@ -1,4 +1,57 @@
-#- include_tasks: install_packages.yml
-#- include_tasks: deploy_cluster.yml
-- include_tasks: secure_cluster.yml
+# TODO: check the content
+- name: check if version HDP-{{ hdp.subversion }} is already registered 
+  uri:
+    url: http://localhost:8080/api/v1/version_definitions/1
+    method: GET
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    status_code: 200,404
+    force_basic_auth: yes
+  register: request_version
+
+- name: INSTALLING CLUSTER
+  include_tasks: install_cluster.yml
+  when: request_version.status == 404
+
+- name: check if cluster is already created
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}
+    method: GET
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    status_code: 200,404
+    force_basic_auth: yes
+    return_content: yes
+  register: request_cluster
+  
+- name: DEPLOYING HADOOP CORE
+  include_tasks: deploy_hadoop.yml
+  when: request_cluster.status == 404
+
+- name: DEPLOY SERVICES
+  include_tasks: deploy_service.yml
+  with_items: "{{ hdp.cluster.services }}"
+  loop_control:
+    loop_var: outer_item
+    
+- name: DEPLOYING HIVE
+  include_tasks: deploy_hive.yml
+  when: false
+
+- name: check if Kerberos is already enabled
+  set_fact:
+    request_content:  "{{ request_cluster.content | from_json }}"
+
+- name: ENABLING KERBEROS
+  include_tasks: enable_kerberos.yml
+  when: hdp.cluster.kerberos is defined and request_content.Clusters.security_type is not defined or request_content.Clusters.security_type != 'KERBEROS'
+
+- name: create environment file for hdp
+  template:
+    src: env-HDP.j2
+    dest: "{{ global.localhost.clientdir }}/env-HDP.sh"
+  delegate_to: localhost
+
+
+
 

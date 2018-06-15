@@ -1,0 +1,20 @@
+echo "***********************************************************************
+* Virtualbox VM CentOS 7.5 - HDP {{ hdp.version }} - Ambari - Kerberos
+*
+* Ambari: http://{{ inventory_hostname }}:8080/ (admin/{{ hdp.cluster.pass }})
+***********************************************************************"
+
+# Hadoop Site environment file
+export SITE_FS='hdfs://{{ inventory_hostname }}:8020'
+export SITE_METASTORE='thrift://localhost:9083'
+export SITE_DESC={{ hdp.cluster.name }}
+export SITE_REALM={{ hdp.cluster.realm }}
+export SITE_LDAP={{ hdp.cluster.realm }}
+export SITE_QUEUE='default'
+export SITE_ZOOKEEPER="{{ inventory_hostname }}:2181"
+export SITE_HIVEURL="jdbc:hive2://$SITE_ZOOKEEPER/;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2"
+
+export OOZIE_URL="http://{{ inventory_hostname }}:11000/oozie"
+
+# Hadoop aliases
+alias bee='/usr/bin/beeline -u ${SITE_HIVEURL}'

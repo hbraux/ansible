@@ -3,6 +3,10 @@
   register: check_hosts
   ignore_errors: yes
 
+- name: set timezone
+  shell: timedatectl set-timezone Europe/Paris
+  become: true
+
 - name: enable PasswordAuthentication
   lineinfile:
     path: /etc/ssh/sshd_config

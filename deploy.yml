@@ -1,44 +1,48 @@
-- hosts: all
-  roles:
-    - network
-
 - hosts: zookeeper
   roles:
+    - network
     - jdk
     - zookeeper
   
 - hosts: kafka
   roles:
+    - network
     - jdk
     - kafka
 
 - hosts: elasticsearch
   roles:
+    - network
     - jdk
     - elasticsearch
   
 - hosts: kibana
   roles:
+    - network
     - jdk
     - kibana
 
 - hosts: logstash
   roles:
+    - network
     - jdk
     - logstash
   
 - hosts: spark-master
   roles:
+    - network
     - jdk
     - spark-master
 
 - hosts: spark-worker
   roles:
+    - network
     - jdk
     - spark-worker
 
 - hosts: nifi
   roles:
+    - network
     - jdk
     - nifi
 
@@ -53,23 +57,28 @@
 
 - hosts: admin
   roles:
+    - network
     - admin
     - stunnel
 
 - hosts: oracle
   roles:
+    - network
     - oracle-db
 
 - hosts: docker
   roles:
+    - network
     - docker
     - client
 
 - hosts: hdp
   roles:
+#    - network
 #    - jdk
 #    - kerberos
 #    - postgresql
 #    - ambari
     - hdp
+#    - client
 

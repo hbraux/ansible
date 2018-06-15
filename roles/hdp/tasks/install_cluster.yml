@@ -1,12 +1,3 @@
-- name: install HDP dependencies
-  yum:
-    name: "{{ item }}"
-  environment:  "{{ global.proxyenv }}"
-  become: true
-  with_items:
-    - unzip
-    - net-tools
-
 # HDP Zookeper brings this useless dependency
 - name: copy fake redhat-lsb
   copy:
@@ -36,7 +27,7 @@
   become: true
   with_items: "{{ hdp.packages }}"
 
-- name: adding proxy to YUM configuration
+- name: add proxy to YUM configuration
   lineinfile:
     path: /etc/yum.conf
     regexp: "^proxy="
@@ -48,4 +39,33 @@
     list: available
   environment:  "{{ global.proxyenv }}"
   become: true
+
+
+- name: download definition file for HDP-{{ hdp.subversion }}
+  get_url:
+    url: "{{ hdp.url }}/HDP-{{ hdp.subversion }}.xml"
+    dest: /opt/HDP.xml
+  environment:  "{{ global.proxyenv }}"
+  become: true
+
+- name: prepare API payload
+  set_fact:
+    api_create_version:
+      VersionDefinition:
+        version_url: "file:/opt/HDP.xml"
+
+- name: create the version HDP-{{ hdp.subversion }}
+  uri:
+    url: http://localhost:8080/api/v1/version_definitions
+    method: POST
+    user: admin
+    password: "{{ hdp.cluster.pass }}"
+    body: "{{ api_create_version | to_json }}"
+    status_code: 201
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+
 
