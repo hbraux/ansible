@@ -1,0 +1,154 @@
+# Deploy a basic HDP cluster with ZOOKEEPER, HDFS, YARN, HIVE, HBASE and RANGER
+
+- name: create Hive PostgreSQL database
+  postgresql_db:
+    name: hive
+  become: true
+  become_user: postgres
+
+- name: create Hive user
+  postgresql_user:
+    db:  hive
+    name: hive
+    password: hive123
+  become: true
+  become_user: postgres
+
+- name: create Ranger PostgreSQL database
+  postgresql_db:
+    name: ranger
+  become: true
+  become_user: postgres
+
+- name: create Ranger user
+  postgresql_user:
+    db:  ranger
+    name: ranger
+    password: ranger123
+  become: true
+  become_user: postgres
+
+- name: add users to pg_hba.conf
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    regexp: "^host  all .* 0.0.0.0/0  md5"
+    line: "host  all   ambari,mapred,hive,ranger 0.0.0.0/0  md5"
+  become: true  
+  notify: restart postgresql
+
+- name: fix ranger directory permissions
+  file:
+    path: /etc/ranger/admin
+    state: directory
+    owner: ranger
+    recurse: yes
+  become: true
+  
+- meta: flush_handlers
+
+# Using Ambari REST API to provision the cluster. See
+#  https://github.com/apache/ambari/tree/trunk/ambari-server/docs/api/v1
+#  https://cwiki.apache.org/confluence/display/AMBARI/Blueprints#Blueprints-APIResourcesandSyntax
+#  https://community.hortonworks.com/articles/47170/automate-hdp-installation-using-ambari-blueprints.html
+# JSON payloads are built from Ansible dictionnaries
+
+- name: prepare blueprint API
+  set_fact:
+    api_blueprint:
+      Blueprints:
+        blueprint_name: ansible
+        stack_name: HDP
+        stack_version: "{{ hdp.version }}"
+      host_groups:
+        - name: hostgroup1
+          cardinality: 1
+          components:
+            - name: ZOOKEEPER_SERVER
+            - name: NAMENODE
+            - name: SECONDARY_NAMENODE
+            - name: DATANODE
+            - name: RESOURCEMANAGER
+            - name: NODEMANAGER
+            - name: HISTORYSERVER
+            - name: APP_TIMELINE_SERVER
+            - name: HBASE_MASTER
+            - name: HBASE_REGIONSERVER
+            - name: HCAT
+            - name: HIVE_SERVER
+            - name: HIVE_METASTORE
+            - name: RANGER_ADMIN
+            - name: RANGER_USERSYNC
+      configurations:
+        - hive-site:
+            properties:
+              javax.jdo.option.ConnectionDriverName: org.postgresql.Driver
+              javax.jdo.option.ConnectionURL: jdbc:postgresql://localhost:5432/hive
+              javax.jdo.option.ConnectionPassword : hive123
+        - hive-env:
+            properties:
+              hive_database_type: postgres
+              hive_database: "Existing PostgreSQL Database"
+        - admin-properties:
+            properties:
+              DB_FLAVOR: POSTGRES
+              db_user: ranger
+              db_name: ranger
+              db_password: ranger123
+              db_host: localhost
+        - ranger-env:
+            properties:
+              create_db_dbuser: false
+              db_password: ranger123
+              ranger_admin_password: amb_ranger_admin
+              ranger.authentication.method: UNIX
+        - ranger-admin-site:
+            properties:
+              ranger.jpa.jdbc.url: jdbc:postgresql://localhost:5432/ranger
+              ranger.jpa.jdbc.driver: org.postgresql.Driver
+              ranger.audit.solr.urls: http://localhost:6083
+          
+
+- name: create blueprint API
+  uri:
+    url: http://localhost:8080/api/v1/blueprints/singlenode?validate_topology=false
+    method: POST
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: "{{ api_blueprint | to_json }}"
+    status_code: 201
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: prepare API payload
+  set_fact:
+    api_create_cluster:
+      blueprint: ansible
+      default_password: "{{ hdp.cluster.password }}"
+      host_groups :
+        - name: hostgroup1
+          hosts:
+            -  fqdn: "{{ inventory_hostname }}" 
+
+- name: submit creation request for cluster {{ hdp.cluster.name }}
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}
+    method: POST
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: "{{ api_create_cluster |to_json  }}"
+    status_code: 202
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+# installation takes around 3 min but initial start takes about 6 min
+- name: wait for services to install and start
+  wait_for:
+    port: "{{ item }}"
+    host: "{{ inventory_hostname }}"
+    timeout: 900
+  with_items: "{{ hdp.cluster.ports }}"
+

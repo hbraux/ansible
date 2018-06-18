@@ -22,7 +22,7 @@
   when : not check_file.stat.exists
   become: true
 
-- name: install ambari
+- name: install Ambari and Solr
   yum:
     name: "{{item }}"
   environment:  "{{ global.proxyenv }}"
@@ -31,6 +31,8 @@
   with_items:
     - ambari-server
     - ambari-agent
+    - ambari-infra-solr
+    - ambari-infra-solr-client
 
 - name: ensure ambari-server is stopped
   service:

@@ -21,19 +21,16 @@ hdp:
     - hbase
     - hive-server
     - hive-webhcat
-    - ranger-admin
   cluster:
     name: sandbox
     password: admin
-    # ZOOKEEPER, HDFS and YARN are installed by default, below are additional services
-    services:
-      - name: HBASE
-        port: 16010
-        components:
-          - HBASE_MASTER
-          - HBASE_REGIONSERVER
     kerberos:
       realm: HOSTONLY.COM
-      tag: config1
       password: nimda
-
+    # ports to check after deployment or restart
+    ports:
+      - 50070
+      - 8088
+      - 19888
+      - 16010
+      - 6080

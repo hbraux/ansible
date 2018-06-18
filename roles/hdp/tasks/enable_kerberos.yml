@@ -56,12 +56,12 @@
 
 - name: prepare Kerberos configuration
   template:
-    src: kerberos.j2
-    dest: /opt/kerberos.json
+    src: kerberos-conf.j2
+    dest: /opt/kerberos-conf.json
   become: true
 
 - name: load Kerberos configuration to ansible
-  command: cat /opt/kerberos.json 
+  command: cat /opt/kerberos-conf.json 
   register: file_kc
 
 - name: set Kerberos configuration on cluster {{ hdp.cluster.name }}

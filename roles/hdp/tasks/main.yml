@@ -9,8 +9,8 @@
     force_basic_auth: yes
   register: request_version
 
-- name: INSTALLING CLUSTER
-  include_tasks: install_cluster.yml
+- name: INSTALLING HDP
+  include_tasks: install_hdp.yml
   when: request_version.status == 404
 
 - name: check if cluster is already created
@@ -24,19 +24,9 @@
     return_content: yes
   register: request_cluster
   
-- name: DEPLOYING HADOOP CORE
-  include_tasks: deploy_hadoop.yml
+- name: DEPLOYING CLUSTER
+  include_tasks: deploy_cluster.yml
   when: request_cluster.status == 404
-
-- name: DEPLOY SERVICES
-  include_tasks: deploy_service.yml
-  with_items: "{{ hdp.cluster.services }}"
-  loop_control:
-    loop_var: outer_item
-    
-- name: DEPLOYING HIVE
-  include_tasks: deploy_hive.yml
-  when: false
 
 - name: check if Kerberos is already enabled
   set_fact:
