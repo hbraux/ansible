@@ -1,16 +1,11 @@
-- name: check if ambari is ready
-  stat: path=/opt/ambari/install.log
-  register: check_file
-  become: true
-
-- name: install dependencies
+- name: install Ambari dependencies
   yum:
     name: "{{ item }}"
-  environment:  "{{ global.proxyenv }}"
   become: true
   with_items:
     - unzip
     - net-tools
+    - initscripts
 
 - name: install Ambari repo
   yum_repository:
@@ -18,67 +13,46 @@
     description: Ambari {{ambari.version}} 
     baseurl: "{{ ambari.url }}"
     gpgcheck: no
-  environment:  "{{ global.proxyenv }}"
-  when : not check_file.stat.exists
   become: true
 
-- name: install Ambari and Solr
+- name: install Ambari
   yum:
     name: "{{item }}"
-  environment:  "{{ global.proxyenv }}"
   become: true
-  when : not check_file.stat.exists
   with_items:
     - ambari-server
     - ambari-agent
-    - ambari-infra-solr
-    - ambari-infra-solr-client
 
-- name: ensure ambari-server is stopped
-  service:
-    name: ambari-server
-    state: stopped
-  when : not check_file.stat.exists
-  become: true
-
-- name : Create folder
+- name : Create folder /opt/ambari
   file:
     dest: /opt/ambari
     state: directory
     mode: 0755
-  when : not check_file.stat.exists
   become: true
 
 - name: configure ambari-server
-  shell: ambari-server setup -j $(readlink -f /usr/bin/java | sed "s:bin/java::")  -s > /opt/ambari/install.log
-  when : not check_file.stat.exists
-  become: true
-
-- name : wair for completion
-  wait_for:
-    path: /opt/ambari/install.log
-    search_regex: "completed successfully"
-  when : not check_file.stat.exists
+  shell: ambari-server setup -j $(readlink -f /usr/bin/java | sed "s:bin/java::") -s >/opt/ambari/ambari-setup.log
+  args:
+    creates: /opt/ambari/ambari-setup.log
   become: true
 
 - name: enable security on ambari
-  shell:  ambari-server  setup-security --security-option=encrypt-passwords --master-key=key1 --master-key-persist
-  when : not check_file.stat.exists
+  shell: ambari-server setup-security --security-option=encrypt-passwords --master-key=key1 --master-key-persist yes >/opt/ambari/ambari-secured.log
+  args:
+    creates: /opt/ambari/ambari-secured.log
   become: true
 
 - name: enable PostgreSQL connector on ambari
-  shell: |
-    chmod 644 /usr/share/java/postgresql-jdbc.jar
-    ambari-server setup --jdbc-db=postgres --jdbc-driver=/usr/share/java/postgresql-jdbc.jar
-  when: not check_file.stat.exists
+  shell: ambari-server setup --jdbc-db=postgres --jdbc-driver=/usr/share/java/postgresql-jdbc.jar -s >/opt/ambari/ambari-postgres.log
+  args:
+    creates: /opt/ambari/ambari-postgres.log
   become: true
 
 - name : start ambari server 
   service:
     name: ambari-server
-    state: restarted
+    state: started
     enabled: yes
-  when : not check_file.stat.exists
   become: true
 
 - name: check for ambari-server to be up
@@ -86,7 +60,6 @@
     host: 127.0.0.1
     port: 8080
     delay: 10
-  when : not check_file.stat.exists
 
 - name: disable Certification check for Python
   lineinfile:
@@ -106,6 +79,6 @@
 - name : start ambari agent
   service:
     name: ambari-agent
-    state: restarted
+    state: started
     enabled: yes
   become: true

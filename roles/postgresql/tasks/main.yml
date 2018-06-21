@@ -1,24 +1,18 @@
-- name: Check if postgresql is installed
-  yum:
-    list: postgresql.x86_64
-  register: is_installed
-  environment:  "{{ global.proxyenv }}"
-  become: true
-
 - name: install postgresql
   yum:
     name: "{{ item }}"
-  environment:  "{{ global.proxyenv }}"
   become: true
-  when:  (is_installed.results|length == 1) or (is_installed.results[1].yumstate != 'installed') 
   with_items:
     - postgresql
+    - postgresql-server
     - postgresql-jdbc
     - python-psycopg2
 
 - name: Init postgresql
   shell: postgresql-setup initdb
-  when: (is_installed.results|length == 1) or (is_installed.results[1].yumstate != 'installed') 
+  args:
+    creates: /var/lib/pgsql/initdb.log
+  become: true
 
 - name: start postgresql
   service:

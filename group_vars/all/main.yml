@@ -3,9 +3,6 @@ global:
     clientdir: "{{ lookup('env','HOME') + '/client.d' }}"
     cache: "{{ lookup('env','HOME') + '/tmp' }}"
   proxyhost: "{{ lookup('env','PROXY_HOST') }}"
-  proxyenv:
-    http_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true)  }}
-    https_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true) }}
   mirrors:
     centos: http://centos.mirrors.ovh.net/ftp.centos.org
     apache: http://apache.crihan.fr/dist

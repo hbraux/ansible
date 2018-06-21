@@ -1,6 +1,5 @@
 - name: yum install {{ jdk.module }}
   yum:
     name: "{{ jdk.module }}"
-  environment:  "{{ global.proxyenv }}"
   become: true
 

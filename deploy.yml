@@ -72,13 +72,33 @@
     - docker
     - client
 
+- hosts: tools
+  roles:
+    - network
+    - rstudio
+  environment:
+    http_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true)  }}
+    https_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true) }}
+
 - hosts: hdp
   roles:
-#    - network
-#    - jdk
-#    - kerberos
-#    - postgresql
-#    - ambari
-    - hdp
-#    - client
+    - {role: 'network', tags: 'pre'}
+    - {role: 'jdk', tags: 'pre'}
+    - {role: 'kerberos', tags: 'pre'}
+    - {role: 'postgresql', tags: 'pre'}
+    - {role: 'ambari', tags: 'pre'}
+    - {role: 'hdp', tags: 'main'}
+    - {role: 'client', tags: 'post'}
 
+  environment:
+    http_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true)  }}
+    https_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true) }}
+    no_proxy: localhost
+
+- hosts: hdpdock
+  roles:
+    - {role: 'jdk', tags: 'pre'}
+    - {role: 'kerberos', tags: 'pre'}
+    - {role: 'postgresql', tags: 'pre'}
+    - {role: 'ambari', tags: 'pre'}
+    - {role: 'hdp', tags: 'main'}

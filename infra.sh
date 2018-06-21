@@ -237,6 +237,10 @@ function usage {
 Options:
   -v : verbose
   -f : force
+  -p : run Ansible playbook with tag 'pre'
+  -m : run Ansible playbook with tag 'main'
+  -t : run Ansible playbook with tag 'post'
+  -c : run Ansible playbook with tag 'clean' (destroy)
 
 commands:
  status            : servers status
@@ -473,15 +477,20 @@ function ansibleRun {
     ansibleCheck $Command
     ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
     [[ -n $ServerList ]] || die "Cannot find any server matching $pattern"
-    
+
     for server in $ServerList
     do ServerCount=$((ServerCount + 1))
     done
 
     runansible=0
     for server in $ServerList
-    do ping -c1 $server >/dev/null
-      alive=$?
+    do 
+      # check if this is a VM or not
+      isvm=$(grep $server $HostFile |grep 'vm=' | sed 's/.*vm=//' | awk '{print $1}')
+      if [[ $isvm == no ]] 
+      then alive=0
+      else ping -c1 $server >/dev/null; alive=$?
+      fi
       case $Command in
 	on) if [ $alive -ne 0 ]
 	  then startServer $server
@@ -500,7 +509,11 @@ function ansibleRun {
     then
       opts=""
       opt v && opts="-vvv"
-      info "\$ ansible-playbook $Playbook --limit $pattern*.$Domain"
+      opt p && opts="$opts --tags pre"
+      opt m && opts="$opts --tags main"
+      opt t && opts="$opts --tags post"
+      opt c && opts="$opts --tags clean"
+      info "\$ ansible-playbook $Playbook $opts --limit $pattern*.$Domain"
       ansible-playbook $opts $Playbook --limit "$pattern*.$Domain"
     fi
     
@@ -513,7 +526,7 @@ function ansibleRun {
 # ------------------------------------------
 
 # analyse command line
-init -fv $@
+init -fvpmtc $@
 
 case $Command in
   help)     usage;;

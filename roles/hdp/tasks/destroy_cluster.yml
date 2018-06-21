@@ -1,0 +1,101 @@
+# Destroy the cluster
+
+- name: stop the services
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"RequestInfo":{"context":"Stop via ansible"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}'
+    force_basic_auth: yes
+    status_code: 200,202
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+  ignore_errors: true
+  
+- name: wait for services to stop
+  wait_for:
+    msg: "Checking {{ item.key }}"
+    port: "{{ item.value }}"
+    state: stopped
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+  with_dict: "{{ hdp.cluster.ports }}"
+
+- name: stop ambari-agent
+  service:
+    name: ambari-agent
+    state: stopped
+  become: true
+
+- name: stop ambari-server
+  service:
+    name: ambari-server
+    state: stopped
+  become: true
+
+- name: drop Hive database
+  postgresql_db:
+    name: hive
+    state: absent
+  become: true
+  become_user: postgres
+
+- name: drop Ranger database
+  postgresql_db:
+    name: ranger
+    state: absent
+  become: true
+  become_user: postgres
+
+- name: drop Ambari database
+  postgresql_db:
+    name: ambari
+    state: absent
+  become: true
+  become_user: postgres
+
+- name: cleanup /opt/ambari
+  file:
+    path: /opt/ambari/
+    state: absent
+  become: true
+
+- name: cleanup keytabs
+  file:
+    path: /etc/security/keytabs/
+    state: absent
+  become: true
+
+- name: cleanup Hadoop data
+  file:
+    path: /hadoop/
+    state: absent
+  become: true
+
+- name: cleanup logs
+  file:
+    path: "/var/log/{{ item }}/"
+    state: absent
+  become: true
+  with_items:
+    - ambari-server
+    - ambari-agent
+    - ranger
+    - hbase
+    - hadoop
+    - hadoop-yarn
+    - hadoop-mapreduce
+    - hadoop-hdfs
+    - hive2
+    - ambari-infra-solr
+    - zookeeper
+    - hive-hcatalog
+
+
+- name: destroy Kerberos database
+  shell:  kdb5_util destroy -f
+  args:
+    removes: /var/kerberos/krb5kdc/principal
+  become: true

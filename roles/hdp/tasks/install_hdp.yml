@@ -17,27 +17,18 @@
     description: HDP-{{ hdp.version }}
     baseurl: "{{ hdp.url }}"
     gpgcheck: no
-  environment:  "{{ global.proxyenv }}"
   become: true
 
 - name: pre-install HDP packages to speedup cluster deployment
   yum:
     name: "{{item }}"
-  environment:  "{{ global.proxyenv }}"
   become: true
   with_items: "{{ hdp.packages }}"
-
-- name: add proxy to YUM configuration
-  lineinfile:
-    path: /etc/yum.conf
-    regexp: "^proxy="
-    line: "proxy={{ global.proxyenv.http_proxy }}"
-  become: true
+  when: hdp.preinstall is defined and hdp.preinstall == "yes"
 
 - name: refresh yum
   yum:
     list: available
-  environment:  "{{ global.proxyenv }}"
   become: true
 
 
@@ -45,7 +36,6 @@
   get_url:
     url: "{{ hdp.url }}/HDP-{{ hdp.subversion }}.xml"
     dest: /opt/HDP.xml
-  environment:  "{{ global.proxyenv }}"
   become: true
 
 - name: prepare API payload

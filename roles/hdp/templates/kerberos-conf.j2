@@ -3,7 +3,7 @@
     "Clusters": {
       "desired_config": {
         "type": "krb5-conf",
-        "tag": "{{ hdp.cluster.kerberos.tag }}",
+        "tag": "{{ ansible_date_time.epoch }}",
         "properties": {
           "domains":"",
           "manage_krb5_conf": "false",
@@ -17,7 +17,7 @@
     "Clusters": {
       "desired_config": {
         "type": "kerberos-env",
-        "tag": "kerberos-conf",
+        "tag": "{{ ansible_date_time.epoch }}",
         "properties": {
           "kdc_type": "mit-kdc",
           "manage_identities": "true",

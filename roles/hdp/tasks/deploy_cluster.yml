@@ -67,8 +67,10 @@
             - name: NAMENODE
             - name: SECONDARY_NAMENODE
             - name: DATANODE
+            - name: HDFS_CLIENT
             - name: RESOURCEMANAGER
             - name: NODEMANAGER
+            - name: YARN_CLIENT
             - name: HISTORYSERVER
             - name: APP_TIMELINE_SERVER
             - name: HBASE_MASTER
@@ -76,8 +78,9 @@
             - name: HCAT
             - name: HIVE_SERVER
             - name: HIVE_METASTORE
-            - name: RANGER_ADMIN
-            - name: RANGER_USERSYNC
+#            - name: INFRA_SOLR
+#            - name: RANGER_ADMIN
+#            - name: RANGER_USERSYNC
       configurations:
         - hive-site:
             properties:
@@ -95,17 +98,23 @@
               db_name: ranger
               db_password: ranger123
               db_host: localhost
+              policymgr_external_url: http://localhost:6080
         - ranger-env:
             properties:
               create_db_dbuser: false
+              ranger_user : ranger
               db_password: ranger123
               ranger_admin_password: amb_ranger_admin
               ranger.authentication.method: UNIX
+              ranger-hdfs-plugin-enabled: yes
+              ranger-yarn-plugin-enabled: yes
+              ranger-hive-plugin-enabled: yes
+              ranger-hbase-plugin-enabled: yes
         - ranger-admin-site:
             properties:
               ranger.jpa.jdbc.url: jdbc:postgresql://localhost:5432/ranger
               ranger.jpa.jdbc.driver: org.postgresql.Driver
-              ranger.audit.solr.urls: http://localhost:6083
+              ranger.audit.solr.urls: http://{{ inventory_hostname }}:8886/solr
           
 
 - name: create blueprint API
@@ -147,8 +156,9 @@
 # installation takes around 3 min but initial start takes about 6 min
 - name: wait for services to install and start
   wait_for:
-    port: "{{ item }}"
+    msg: "Checking {{ item.key }}"
+    port: "{{ item.value }}"
     host: "{{ inventory_hostname }}"
     timeout: 900
-  with_items: "{{ hdp.cluster.ports }}"
+  with_dict: "{{ hdp.cluster.ports }}"
 

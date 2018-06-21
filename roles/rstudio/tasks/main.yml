@@ -1,0 +1,20 @@
+- name: install epel
+  yum:
+    name: epel-release
+  become: true
+
+- name: refresh YUM
+  yum:
+    list: available
+  become: true
+
+- name: install R
+  yum:
+    name: R
+  become: true
+
+- name: install R-studio server {{  rstudio.version }}
+  yum:
+    name: "{{  rstudio.url }}"
+  become: true
+
