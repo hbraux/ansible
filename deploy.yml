@@ -87,7 +87,7 @@
     - {role: 'kerberos', tags: 'pre'}
     - {role: 'postgresql', tags: 'pre'}
     - {role: 'ambari', tags: 'pre'}
-    - {role: 'hdp', tags: 'main'}
+    - {role: 'hdp',  tags: 'main'}
     - {role: 'client', tags: 'post'}
 
   environment:

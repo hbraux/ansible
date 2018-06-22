@@ -110,20 +110,6 @@
     headers:
       X-Requested-By: "ambari"
 
-- name: Install the Kerberos service
-  uri:
-    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/KERBEROS
-    method: PUT
-    user: admin
-    password: "{{ hdp.cluster.password }}"
-    body: '{"ServiceInfo":{"state":"INSTALLED"}}' 
-    status_code: 200,202
-    force_basic_auth: yes
-    body_format: raw
-    headers:
-      X-Requested-By: "ambari"
-
-
 - name: set the Kerberos Descriptor 
   uri:
     url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/artifacts/kerberos_descriptor
@@ -136,20 +122,23 @@
     body_format: json
     headers:
       X-Requested-By: "ambari"
-  
 
-- name: install the Kerberos client
+- name: Install the Kerberos service
   uri:
-    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/host_components?HostRoles/state=INIT
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/KERBEROS
     method: PUT
     user: admin
     password: "{{ hdp.cluster.password }}"
-    body:  '{"HostRoles":{"state":"INSTALLED"}}'
-    status_code: 200,202
+    body: '{"RequestInfo":{"context":"Installing Kerberos service"},"Body":{"ServiceInfo":{"state":"INSTALLED"} } }'
+    status_code: 202
     force_basic_auth: yes
     body_format: raw
     headers:
       X-Requested-By: "ambari"
+
+- name: wait for installation to complete
+  wait_for:
+    timeout: 60
 
 - name: prepare API payload
   set_fact:
@@ -174,6 +163,25 @@
     headers:
       X-Requested-By: "ambari"
 
+- name: wait for installation to complete
+  wait_for:
+    timeout: 60
+
+- name: install the Kerberos client
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/host_components?HostRoles/state=INIT
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"RequestInfo":{"context":"Installing Kerberos client"},"Body":{"HostRoles":{"state":"INSTALLED"}}}'
+    status_code: 200,202
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+    when: false
+
+# this task is not required. It's kept just in case
 - name: regenerate keytabs
   uri:
     url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/?regenerate_keytabs=all
@@ -181,19 +189,59 @@
     user: admin
     password: "{{ hdp.cluster.password }}"
     body:  '{"Clusters":{"security_type":"KERBEROS"}}'
-    status_code: 200
+    status_code: 200,202
     force_basic_auth: yes
     body_format: raw
     headers:
       X-Requested-By: "ambari"
-    when: false
+  when: false
 
+- name: stopping Zookeeper
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/ZOOKEEPER
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body:  '{"RequestInfo": {"context" :"Stopping Zookeeper"}, "Body": {"ServiceInfo": {"state": "INSTALLED"}}}'
+    status_code: 202
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: wait for Zookeeper to stop
+  wait_for:
+    port: 2181
+    state: stopped
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+
+- name: starting Zookeeper
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/ZOOKEEPER
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body:  '{"RequestInfo": {"context" :"Starting Zookeeper"}, "Body": {"ServiceInfo": {"state": "STARTED"}}}'
+    status_code: 202
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: wait for Zookeeper 
+  wait_for:
+    port: 2181
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+
+  
 - name: prepare API payload
   set_fact:
     api_restart_cluster:
       RequestInfo:
         command: RESTART
-        context: "Restart all services"
+        context: "Restarting all services"
         operation_level: host_component
       Requests/resource_filters:
         - hosts_predicate: HostRoles/cluster_name="{{ hdp.cluster.name }}"
@@ -221,6 +269,6 @@
     msg: "Checking {{ item.key }}"
     port: "{{ item.value }}"
     host: "{{ inventory_hostname }}"
-    timeout: 300
+    timeout: 600
   with_dict: "{{ hdp.cluster.ports }}"
 

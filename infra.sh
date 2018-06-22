@@ -237,9 +237,9 @@ function usage {
 Options:
   -v : verbose
   -f : force
-  -p : run Ansible playbook with tag 'pre'
+  -b : run Ansible playbook with tag 'before'
   -m : run Ansible playbook with tag 'main'
-  -t : run Ansible playbook with tag 'post'
+  -a : run Ansible playbook with tag 'after'
   -c : run Ansible playbook with tag 'clean' (destroy)
 
 commands:

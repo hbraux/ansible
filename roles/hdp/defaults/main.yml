@@ -39,5 +39,6 @@ hdp:
       mapred-history: 19888
       hbase-master: 16010
       hive-server: 10000
-      # ranger-ui: 6080
       # solr: 8886
+      # ranger-ui: 6080
+

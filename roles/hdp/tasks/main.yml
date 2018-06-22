@@ -41,9 +41,10 @@
     dest: "{{ global.localhost.clientdir }}/env-HDP.sh"
   delegate_to: localhost
 
-- name: DESTROY CLUSTER
-  include_tasks: destroy_cluster.yml
+- include_tasks: destroy_cluster.yml 
   tags: [ 'never', 'clean' ]
+
+
 
 
 

@@ -78,12 +78,13 @@
             - name: HCAT
             - name: HIVE_SERVER
             - name: HIVE_METASTORE
-#            - name: INFRA_SOLR
+            - name: INFRA_SOLR
 #            - name: RANGER_ADMIN
 #            - name: RANGER_USERSYNC
       configurations:
         - hive-site:
             properties:
+              hive.execution.engine: mr
               javax.jdo.option.ConnectionDriverName: org.postgresql.Driver
               javax.jdo.option.ConnectionURL: jdbc:postgresql://localhost:5432/hive
               javax.jdo.option.ConnectionPassword : hive123

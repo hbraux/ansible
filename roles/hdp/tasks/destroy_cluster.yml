@@ -1,18 +1,25 @@
 # Destroy the cluster
 
+- name: WARNING, cluster data will be lost. Type CTRL^C to stop the process
+  wait_for:
+    timeout: 10
+  delegate_to: localhost
+  tags: [ 'never', 'clean' ]
+
 - name: stop the services
   uri:
     url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services
     method: PUT
     user: admin
     password: "{{ hdp.cluster.password }}"
-    body: '{"RequestInfo":{"context":"Stop via ansible"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}'
+    body: '{"RequestInfo":{"context":"Stopping services"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}'
     force_basic_auth: yes
     status_code: 200,202
     body_format: raw
     headers:
       X-Requested-By: "ambari"
   ignore_errors: true
+  tags: [ 'never', 'clean' ]
   
 - name: wait for services to stop
   wait_for:
@@ -22,18 +29,21 @@
     host: "{{ inventory_hostname }}"
     timeout: 300
   with_dict: "{{ hdp.cluster.ports }}"
+  tags: [ 'never', 'clean' ]
 
 - name: stop ambari-agent
   service:
     name: ambari-agent
     state: stopped
   become: true
+  tags: [ 'never', 'clean' ]
 
 - name: stop ambari-server
   service:
     name: ambari-server
     state: stopped
   become: true
+  tags: [ 'never', 'clean' ]
 
 - name: drop Hive database
   postgresql_db:
@@ -41,6 +51,7 @@
     state: absent
   become: true
   become_user: postgres
+  tags: [ 'never', 'clean' ]
 
 - name: drop Ranger database
   postgresql_db:
@@ -48,6 +59,7 @@
     state: absent
   become: true
   become_user: postgres
+  tags: [ 'never', 'clean' ]
 
 - name: drop Ambari database
   postgresql_db:
@@ -55,24 +67,28 @@
     state: absent
   become: true
   become_user: postgres
+  tags: [ 'never', 'clean' ]
 
 - name: cleanup /opt/ambari
   file:
     path: /opt/ambari/
     state: absent
   become: true
+  tags: [ 'never', 'clean' ]
 
 - name: cleanup keytabs
   file:
     path: /etc/security/keytabs/
     state: absent
   become: true
+  tags: [ 'never', 'clean' ]
 
 - name: cleanup Hadoop data
   file:
     path: /hadoop/
     state: absent
   become: true
+  tags: [ 'never', 'clean' ]
 
 - name: cleanup logs
   file:
@@ -92,6 +108,7 @@
     - ambari-infra-solr
     - zookeeper
     - hive-hcatalog
+  tags: [ 'never', 'clean' ]
 
 
 - name: destroy Kerberos database
@@ -99,3 +116,4 @@
   args:
     removes: /var/kerberos/krb5kdc/principal
   become: true
+  tags: [ 'never', 'clean' ]
