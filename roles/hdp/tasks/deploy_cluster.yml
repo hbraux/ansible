@@ -79,8 +79,9 @@
             - name: HIVE_SERVER
             - name: HIVE_METASTORE
             - name: INFRA_SOLR
-#            - name: RANGER_ADMIN
-#            - name: RANGER_USERSYNC
+            - name: RANGER_ADMIN
+            - name: RANGER_USERSYNC
+            - name: RANGER_TAGSYNC
       configurations:
         - hive-site:
             properties:
@@ -107,10 +108,6 @@
               db_password: ranger123
               ranger_admin_password: amb_ranger_admin
               ranger.authentication.method: UNIX
-              ranger-hdfs-plugin-enabled: yes
-              ranger-yarn-plugin-enabled: yes
-              ranger-hive-plugin-enabled: yes
-              ranger-hbase-plugin-enabled: yes
         - ranger-admin-site:
             properties:
               ranger.jpa.jdbc.url: jdbc:postgresql://localhost:5432/ranger

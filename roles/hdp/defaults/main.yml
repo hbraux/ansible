@@ -27,7 +27,7 @@ hdp:
     - ranger-tagsync
   cluster:
     name: SANDBOX
-    password: admin
+    password: nimda
     kerberos:
       realm: HOSTONLY.COM
       password: nimda
@@ -39,6 +39,6 @@ hdp:
       mapred-history: 19888
       hbase-master: 16010
       hive-server: 10000
-      # solr: 8886
-      # ranger-ui: 6080
+      solr: 8886
+      ranger-ui: 6080
 

@@ -1,9 +1,8 @@
 # Destroy the cluster
 
-- name: WARNING, cluster data will be lost. Type CTRL^C to stop the process
+- name: WARNING, cluster data will be lost. Type CTRL-C to stop the process
   wait_for:
     timeout: 10
-  delegate_to: localhost
   tags: [ 'never', 'clean' ]
 
 - name: stop the services
@@ -83,11 +82,13 @@
   become: true
   tags: [ 'never', 'clean' ]
 
-- name: cleanup Hadoop data
+- name: cleanup data
   file:
-    path: /hadoop/
+    path: "{{ item }}/"
     state: absent
   become: true
+  with_items:
+    - /hadoop
   tags: [ 'never', 'clean' ]
 
 - name: cleanup logs

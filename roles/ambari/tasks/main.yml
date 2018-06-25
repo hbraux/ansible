@@ -61,6 +61,28 @@
     port: 8080
     delay: 10
 
+- name: prepare API payload
+  set_fact:
+    api_update_pass:
+      Users:
+        user_name: admin
+        password: "{{ ambari.password }}"
+        old_password: admin
+
+# accept 403 in case password was already changed
+- name: update admin password
+  uri:
+    url: http://localhost:8080/api/v1/users/admin
+    method: PUT
+    user: admin
+    password: admin
+    body: "{{ api_update_pass |to_json  }}"
+    force_basic_auth: yes
+    status_code: 200,403
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
 - name: disable Certification check for Python
   lineinfile:
     path: /etc/python/cert-verification.cfg
@@ -75,6 +97,7 @@
     insertafter: "[security]"
     line: "force_https_protocol=PROTOCOL_TLSv1_2"
   become: true
+
 
 - name : start ambari agent
   service:
