@@ -59,7 +59,7 @@
   wait_for:
     host: 127.0.0.1
     port: 8080
-    delay: 10
+    timeout: 300
 
 - name: prepare API payload
   set_fact:
@@ -83,19 +83,14 @@
     headers:
       X-Requested-By: "ambari"
 
-- name: disable Certification check for Python
-  lineinfile:
-    path: /etc/python/cert-verification.cfg
-    regexp: "^verify="
-    line: "verify=disable"
-  become: true
-
+# fix for conection to server error; EOF occurred in violation of protocol 
 - name: fix ambari-agent.ini
   lineinfile:
     path: /etc/ambari-agent/conf/ambari-agent.ini
     regexp: "^force_https_protocol="
     insertafter: "[security]"
     line: "force_https_protocol=PROTOCOL_TLSv1_2"
+    backrefs: yes
   become: true
 
 

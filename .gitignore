@@ -1,2 +1,2 @@
 *~
-ambari.*.rpm
+roles/preinstall/files/*.rpm

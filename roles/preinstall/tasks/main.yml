@@ -1,0 +1,28 @@
+- name: create /opt/rpm
+  file:
+    path: /opt/rpm
+    state: directory
+  become: true
+
+- name: check for local rpm files 
+  find:
+    path: "{{ role_path }}/files"
+    patterns: "{{ preinstall }}"
+  delegate_to: localhost
+  register: rpm_files
+
+- name: copy rpm files
+  copy:
+    src: "{{ item.path | basename }}"
+    dest: /opt/rpm
+  become: true
+  with_items: "{{ rpm_files.files }}"
+  when: rpm_files.matched > 0
+
+- name: install rpm files
+  yum:
+    name: "/opt/rpm/{{ item.path | basename }}"
+  become: true
+  with_items: "{{ rpm_files.files }}"
+  when: rpm_files.matched > 0
+

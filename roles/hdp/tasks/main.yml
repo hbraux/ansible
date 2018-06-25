@@ -27,6 +27,21 @@
   include_tasks: deploy_cluster.yml
   when: request_cluster.status == 404
 
+- name: check if Ranger is configured
+  uri:
+    url: http://localhost:6080/service/public/api/repository
+    method: GET
+    user: admin
+    password: admin
+    status_code: 200
+    return_content: yes
+    force_basic_auth: yes
+  register: request_ranger
+
+- name: CONFIGURING RANGER
+  include_tasks: configure_ranger.yml
+  when: (request_ranger.content |from_json)['totalCount'] == 1
+
 - name: check if Kerberos is already enabled
   set_fact:
     request_content:  "{{ request_cluster.content | from_json }}"
@@ -41,8 +56,18 @@
     dest: "{{ global.localhost.clientdir }}/env-HDP.sh"
   delegate_to: localhost
 
-- include_tasks: destroy_cluster.yml 
-  tags: [ 'never', 'clean' ]
+# Ansible Workaround to prevent the destro task beeing executed
+- shell: /bin/true
+  register: no_tags
+
+- shell: /bin/true
+  register: standard_tags
+  tags: ['pre', 'post', 'main']
+  
+- name: DESTROYING CLUSTER
+  include_tasks: destroy_cluster.yml 
+  when: no_tags is not defined and standard_tags is not defined
+  tags: clean
 
 
 

@@ -1,9 +1,9 @@
 # Destroy the cluster
 
-- name: WARNING, cluster data will be lost. Type CTRL-C to stop the process
+- name: WARNING, all data will be lost. Type CTRL-C to stop the process
   wait_for:
     timeout: 10
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: stop the services
   uri:
@@ -18,7 +18,7 @@
     headers:
       X-Requested-By: "ambari"
   ignore_errors: true
-  tags: [ 'never', 'clean' ]
+  tags: clean
   
 - name: wait for services to stop
   wait_for:
@@ -28,21 +28,21 @@
     host: "{{ inventory_hostname }}"
     timeout: 300
   with_dict: "{{ hdp.cluster.ports }}"
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: stop ambari-agent
   service:
     name: ambari-agent
     state: stopped
   become: true
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: stop ambari-server
   service:
     name: ambari-server
     state: stopped
   become: true
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: drop Hive database
   postgresql_db:
@@ -50,7 +50,7 @@
     state: absent
   become: true
   become_user: postgres
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: drop Ranger database
   postgresql_db:
@@ -58,7 +58,7 @@
     state: absent
   become: true
   become_user: postgres
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: drop Ambari database
   postgresql_db:
@@ -66,21 +66,21 @@
     state: absent
   become: true
   become_user: postgres
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: cleanup /opt/ambari
   file:
     path: /opt/ambari/
     state: absent
   become: true
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: cleanup keytabs
   file:
     path: /etc/security/keytabs/
     state: absent
   become: true
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: cleanup data
   file:
@@ -89,7 +89,7 @@
   become: true
   with_items:
     - /hadoop
-  tags: [ 'never', 'clean' ]
+  tags: clean
 
 - name: cleanup logs
   file:
@@ -109,12 +109,11 @@
     - ambari-infra-solr
     - zookeeper
     - hive-hcatalog
-  tags: [ 'never', 'clean' ]
-
+  tags: clean
 
 - name: destroy Kerberos database
   shell:  kdb5_util destroy -f
   args:
     removes: /var/kerberos/krb5kdc/principal
   become: true
-  tags: [ 'never', 'clean' ]
+  tags: clean

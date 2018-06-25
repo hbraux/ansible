@@ -81,7 +81,10 @@
     https_proxy: http://{{ lookup('env','PROXY_HOST') }}:{{ lookup('env','PROXY_PORT')|default('3128',true) }}
 
 - hosts: hdp
+  vars:
+    preinstall: 'jdk*.rpm,ambari*.rpm'
   roles:
+    - {role: 'preinstall', tags: 'pre'}
     - {role: 'network', tags: 'pre'}
     - {role: 'jdk', tags: 'pre'}
     - {role: 'kerberos', tags: 'pre'}

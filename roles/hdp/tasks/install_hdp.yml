@@ -2,13 +2,12 @@
 - name: copy fake redhat-lsb
   copy:
     src: redhat-lsb-4.1-27.el7.centos.1.x86_64.rpm
-    dest: /opt
+    dest: /tmp
   become: true
 
 - name: install fake redhat-lsb
   yum:
-    name: /opt/redhat-lsb-4.1-27.el7.centos.1.x86_64.rpm
-    state: present
+    name: /tmp/redhat-lsb-4.1-27.el7.centos.1.x86_64.rpm
   become: true
 
 - name: install HDP repo

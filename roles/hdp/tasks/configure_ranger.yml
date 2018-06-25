@@ -1,0 +1,47 @@
+- name: prepare APIs payload
+  set_fact:
+    api_ranger_requests:
+      - name: hdfs_service
+        repositoryType: hdfs
+        isActive: true
+        config:
+          username: admin
+          password: admin
+          hadoop.security.authorization: true
+          hadoop.security.authentication: simple
+          fs.default.name: "hdfs://{{ inventory_hostname }}:8020"
+      - name: hbase_service
+        repositoryType: hbase
+        isActive: true
+        config:
+          username: admin
+          password: admin
+          hadoop.security.authentication: simple
+          hbase.security.authentication: simple
+          hbase.zookeeper.quorum: "{{ inventory_hostname }}"
+          hbase.zookeeper.property.clientPort: 2181
+          zookeeper.znode.parent: "/hbase"
+      - name: hive_service
+        repositoryType: hive
+        isActive: true
+        config:
+          username: admin
+          password: admin
+          jdbc.driverClassName: org.postgresql.Driver
+          jdbc.url: jdbc:postgresql://localhost:5432/hive
+
+
+- name: add services to Ranger
+  uri:
+    url: http://localhost:6080/service/public/api/repository
+    method: POST
+    user: admin
+    password: admin
+    body: "{{ item|to_json }}"
+    status_code: 200
+    force_basic_auth: yes
+    body_format: raw
+    headers:
+      Content-Type: text/json
+  with_items: "{{ api_ranger_requests }}"
+

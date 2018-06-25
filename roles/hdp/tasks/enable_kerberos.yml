@@ -259,16 +259,16 @@
     headers:
       X-Requested-By: "ambari"
 
-- name: wait 1 minute
+- name: wait 5 minutes
   wait_for:
-    timeout: 60
+    timeout: 300
   delegate_to: localhost
 
-- name: wait for services to be up again
+- name: wait for services 
   wait_for:
     msg: "Checking {{ item.key }}"
     port: "{{ item.value }}"
     host: "{{ inventory_hostname }}"
-    timeout: 600
+    timeout: 300
   with_dict: "{{ hdp.cluster.ports }}"
 

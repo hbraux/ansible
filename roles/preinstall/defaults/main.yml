@@ -1,0 +1,3 @@
+# this variable can be overriden at playbook level
+
+preinstall: 'sample.rpm'
