@@ -1,0 +1,142 @@
+# HDFS Plugin
+
+- name: stop HDFS
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/HDFS
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"RequestInfo":{"context":"Stopping HDFS"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}'
+    force_basic_auth: yes
+    status_code: 200,202
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+  
+- name: wait for HDFS to stop
+  wait_for:
+    port: 8020
+    state: stopped
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+
+- vars:
+    conf_type: hdfs-site
+    conf_properties:
+      dfs.namenode.inode.attributes.provider.class: org.apache.ranger.authorization.hadoop.RangerHdfsAuthorizer
+  include_tasks: update_config.yml
+
+- vars:
+    conf_type: ranger-hdfs-plugin-properties
+    conf_properties:
+      REPOSITORY_CONFIG_USERNAME: hdfs
+      ranger-hdfs-plugin-enabled: "Yes"
+  include_tasks: update_config.yml
+
+- vars:
+    conf_type: ranger-hdfs-security
+    conf_properties:
+      ranger.plugin.hdfs.policy.rest.url: "http://{{ inventory_hostname }}:6080"
+  include_tasks: update_config.yml
+
+- vars:
+    conf_type: ranger-hdfs-audit
+    conf_properties:
+      xasecure.audit.destination.solr: true
+      xasecure.audit.destination.solr.urls: http://{{ inventory_hostname }}:8886/solr/ranger_audits
+      xasecure.audit.destination.solr.zookeepers: "{{ inventory_hostname }}:2181/infra-solr"
+      xasecure.audit.destination.hdfs.dir: hdfs://{{ inventory_hostname }}:8020/ranger/audit
+  include_tasks: update_config.yml
+
+- name: start HDFS
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/HDFS
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"RequestInfo":{"context":"Starting HDFS"},"Body":{"ServiceInfo":{"state":"STARTED"}}}'
+    force_basic_auth: yes
+    status_code: 200,202
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: wait for HDFS to start
+  wait_for:
+    port: 8020
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+
+
+# Hive Plugin
+
+- name: stop HIVE
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/HIVE
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"RequestInfo":{"context":"Stopping HIVE"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}'
+    force_basic_auth: yes
+    status_code: 200,202
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+  
+- name: wait for HIVE to stop
+  wait_for:
+    port: 10000
+    state: stopped
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+
+- vars:
+    conf_type: hive-site
+    conf_properties: {hive.security.authorization.enabled: true, hive.server2.enable.doAs: true}
+  include_tasks: update_config.yml
+
+- vars:
+    conf_type: hiveserver2-site
+    conf_properties:
+      hive.security.authorization.enabled: true
+      hive.security.authorization.manager: org.apache.ranger.authorization.hive.authorizer.RangerHiveAuthorizerFactory
+      hive.security.authenticator.manager: org.apache.hadoop.hive.ql.security.SessionStateUserAuthenticator
+      hive.conf.restricted.list: 'hive.security.authenticator.manager,hive.security.authorization.manager,hive.security.metastore.authorization.manager,hive.security.metastore.authenticator.manager,hive.users.in.admin.role,hive.server2.xsrf.filter.enabled,hive.security.authorization.enabled'
+  include_tasks: update_config.yml
+
+- vars:
+    conf_type: ranger-hive-security
+    conf_properties:
+      ranger.plugin.hive.policy.rest.url: http://{{ inventory_hostname }}:6080
+  include_tasks: update_config.yml
+
+- vars:
+    conf_type: ranger-hive-audit
+    conf_properties:
+      xasecure.audit.destination.solr: true
+      xasecure.audit.destination.solr.urls: http://{{ inventory_hostname }}:8886/solr/ranger_audits
+      xasecure.audit.destination.solr.zookeepers: "{{ inventory_hostname }}:2181/infra-solr"
+      xasecure.audit.destination.hdfs.dir: hdfs://{{ inventory_hostname }}:8020/ranger/audit
+  include_tasks: update_config.yml
+
+- name: start HIVE
+  uri:
+    url: http://localhost:8080/api/v1/clusters/{{ hdp.cluster.name }}/services/HIVE
+    method: PUT
+    user: admin
+    password: "{{ hdp.cluster.password }}"
+    body: '{"RequestInfo":{"context":"Starting HIVE"},"Body":{"ServiceInfo":{"state":"STARTED"}}}'
+    force_basic_auth: yes
+    status_code: 200,202
+    body_format: raw
+    headers:
+      X-Requested-By: "ambari"
+
+- name: wait for HIVE to start
+  wait_for:
+    port: 10000
+    host: "{{ inventory_hostname }}"
+    timeout: 300
+
+
+

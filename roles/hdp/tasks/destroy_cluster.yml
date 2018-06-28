@@ -30,18 +30,15 @@
   with_dict: "{{ hdp.cluster.ports }}"
   tags: clean
 
-- name: stop ambari-agent
+- name: stop ambari
   service:
-    name: ambari-agent
+    name: "{{ item }}"
     state: stopped
   become: true
-  tags: clean
-
-- name: stop ambari-server
-  service:
-    name: ambari-server
-    state: stopped
-  become: true
+  with_items:
+    - ambari-server
+    - ambari-agent
+  ignore_errors: true
   tags: clean
 
 - name: drop Hive database
@@ -75,6 +72,17 @@
   become: true
   tags: clean
 
+# to be sure to cleanup Ambari's cache and data
+- name: uninstall Ambari
+  yum:
+    name: "{{item }}"
+    state: absent
+  become: true
+  with_items:
+    - ambari-server
+    - ambari-agent
+  tags: clean
+
 - name: cleanup keytabs
   file:
     path: /etc/security/keytabs/
@@ -82,13 +90,38 @@
   become: true
   tags: clean
 
-- name: cleanup data
+- name: destroy Kerberos database
+  shell: kdb5_util destroy -f
+  args:
+    removes: /var/kerberos/krb5kdc/principal
+  become: true
+  tags: clean
+
+- name: cleanup hdfs data and solr
   file:
     path: "{{ item }}/"
     state: absent
   become: true
   with_items:
     - /hadoop
+    - /opt/ambari_infra_solr/data
+  tags: clean
+
+- name: cleanup other data
+  file:
+    path: "/var/lib/{{ item }}/"
+    state: absent
+  become: true
+  with_items:
+    - ambari-server
+    - ambari-agent
+    - hadoop-hdfs
+    - hadoop-mapreduce
+    - hadoop-yarn
+    - hive
+    - hive2
+    - ranger
+    - zookeeper
   tags: clean
 
 - name: cleanup logs
@@ -111,9 +144,34 @@
     - hive-hcatalog
   tags: clean
 
-- name: destroy Kerberos database
-  shell:  kdb5_util destroy -f
+
+- name: cleanup /tmp
+  shell: rm -fr /tmp/Jetty* /tmp/krb* /tmp/ambari* /tmp/hadoop* /tmp/hsperfdata* /tmp/hbase* /tmp/hive* 
   args:
-    removes: /var/kerberos/krb5kdc/principal
+    warn: false
   become: true
   tags: clean
+
+- name: remove users and groups
+  user:
+    name: "{{ item }}"
+    state: absent
+  become: true
+  with_items:
+    - infra-solr
+    - tez
+    - hcat
+    - ranger
+    - hive
+    - hbase
+    - mapred
+    - hdfs
+    - yarn
+    - zookeeper
+    - ambari-qa
+  when: false
+  tags: clean
+
+- debug:
+    msg: IT IS RECOMMENDED TO REBOOT SERVER NOW
+

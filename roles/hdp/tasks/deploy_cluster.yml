@@ -106,18 +106,17 @@
               create_db_dbuser: false
               ranger_user : ranger
               db_password: ranger123
-              ranger_admin_password: amb_ranger_admin
+              admin_password: "{{ hdp.cluster.ranger.password }}"
+              ranger_admin_username: admin
+              ranger_admin_password: "{{ hdp.cluster.ranger.password }}"
               ranger.authentication.method: UNIX
-              ranger-hdfs-plugin-enabled: Yes
-              ranger-hive-plugin-enabled: Yes
-              ranger-hbase-plugin-enabled: Yes
-              ranger-yarn-plugin-enabled: Yes
+              is_solrCloud_enabled: true
         - ranger-admin-site:
             properties:
               ranger.jpa.jdbc.url: jdbc:postgresql://localhost:5432/ranger
               ranger.jpa.jdbc.driver: org.postgresql.Driver
-              ranger.audit.solr.urls: http://{{ inventory_hostname }}:8886/solr
-          
+              ranger.audit.solr.urls: http://{{ inventory_hostname }}:6083/solr/ranger_audits
+              ranger.audit.solr.zookeepers: "{{ inventory_hostname }}:2181/infra-solr"
 
 - name: create blueprint API
   uri:
@@ -155,8 +154,8 @@
     headers:
       X-Requested-By: "ambari"
 
-# installation takes around 3 min but initial start takes about 6 min
-- name: wait for services to install and start
+# Installation takes around 3 min but initial start takes about 6 min (espeially Ranger takes time)
+- name: wait for services to install and start (about 10 min)
   wait_for:
     msg: "Checking {{ item.key }}"
     port: "{{ item.value }}"

@@ -2,38 +2,39 @@
   set_fact:
     api_ranger_requests:
       - name: hdfs_service
-        repositoryType: hdfs
-        isActive: true
-        config:
-          username: admin
-          password: admin
+        type: hdfs
+        configs:
+          username: "hdfs@{{ hdp.cluster.kerberos.realm }}"
+          password: hadoop
           hadoop.security.authorization: true
           hadoop.security.authentication: simple
+          hadoop.rpc.protection: authentication
           fs.default.name: "hdfs://{{ inventory_hostname }}:8020"
+          dfs.datanode.kerberos.principal: "dn/_HOST@{{ hdp.cluster.kerberos.realm }}"
+          dfs.namenode.kerberos.principal: "nn/_HOST@{{ hdp.cluster.kerberos.realm }}"
+          dfs.secondary.namenode.kerberos.principal: "nn/_HOST@{{ hdp.cluster.kerberos.realm }}"
       - name: hbase_service
-        repositoryType: hbase
-        isActive: true
-        config:
-          username: admin
-          password: admin
-          hadoop.security.authentication: simple
-          hbase.security.authentication: simple
+        type: hbase
+        configs:
+          username: "hbase@{{ hdp.cluster.kerberos.realm }}"
+          password: hadoop
+          hadoop.security.authentication: Kerberos
+          hbase.security.authentication: Kerberos
           hbase.zookeeper.quorum: "{{ inventory_hostname }}"
           hbase.zookeeper.property.clientPort: 2181
           zookeeper.znode.parent: "/hbase"
       - name: hive_service
-        repositoryType: hive
-        isActive: true
-        config:
-          username: admin
-          password: admin
+        type: hive
+        configs:
+          username: "hive@{{ hdp.cluster.kerberos.realm }}"
+          password: hadoop
           jdbc.driverClassName: org.postgresql.Driver
           jdbc.url: jdbc:postgresql://localhost:5432/hive
 
 
 - name: add services to Ranger
   uri:
-    url: http://localhost:6080/service/public/api/repository
+    url: http://localhost:6080/service/public/v2/api/service
     method: POST
     user: admin
     password: admin
