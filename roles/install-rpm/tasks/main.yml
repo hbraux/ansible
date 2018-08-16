@@ -7,7 +7,7 @@
 - name: check for local rpm files 
   find:
     path: "{{ role_path }}/files"
-    patterns: "{{ preinstall }}"
+    patterns: "{{ install_rpm }}"
   delegate_to: localhost
   register: rpm_files
 

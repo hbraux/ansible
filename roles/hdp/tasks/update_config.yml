@@ -1,4 +1,4 @@
-# A playbook to update a configuration attribute
+# A generic playbook to update a configuration attribute
 # https://cwiki.apache.org/confluence/display/AMBARI/Modify+configurations
 
 - name: get latest config tags
@@ -44,7 +44,7 @@
       - Clusters:
           desired_config:
             - type: "{{ conf_type }}"
-              tag: version{{ ansible_date_time.epoch }}
+              tag: ansible_{{ ansible_date_time.epoch }}
               properties: "{{ conf_props }}"
 
 - name: update Cluster configuration for {{ conf_type }}

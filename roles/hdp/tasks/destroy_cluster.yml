@@ -1,9 +1,9 @@
-# Destroy the cluster
+# Destroy the cluster (tag kill)
 
 - name: WARNING, all data will be lost. Type CTRL-C to stop the process
   wait_for:
     timeout: 10
-  tags: clean
+  tags: kill
 
 - name: stop the services
   uri:
@@ -18,7 +18,7 @@
     headers:
       X-Requested-By: "ambari"
   ignore_errors: true
-  tags: clean
+  tags: kill
   
 - name: wait for services to stop
   wait_for:
@@ -27,8 +27,8 @@
     state: stopped
     host: "{{ inventory_hostname }}"
     timeout: 300
-  with_dict: "{{ hdp.cluster.ports }}"
-  tags: clean
+  with_dict: "{{ hdp.ports }}"
+  tags: kill
 
 - name: stop ambari
   service:
@@ -39,7 +39,7 @@
     - ambari-server
     - ambari-agent
   ignore_errors: true
-  tags: clean
+  tags: kill
 
 - name: drop Hive database
   postgresql_db:
@@ -47,7 +47,7 @@
     state: absent
   become: true
   become_user: postgres
-  tags: clean
+  tags: kill
 
 - name: drop Ranger database
   postgresql_db:
@@ -55,7 +55,7 @@
     state: absent
   become: true
   become_user: postgres
-  tags: clean
+  tags: kill
 
 - name: drop Ambari database
   postgresql_db:
@@ -63,14 +63,14 @@
     state: absent
   become: true
   become_user: postgres
-  tags: clean
+  tags: kill
 
 - name: cleanup /opt/ambari
   file:
     path: /opt/ambari/
     state: absent
   become: true
-  tags: clean
+  tags: kill
 
 # to be sure to cleanup Ambari's cache and data
 - name: uninstall Ambari
@@ -81,21 +81,21 @@
   with_items:
     - ambari-server
     - ambari-agent
-  tags: clean
+  tags: kill
 
 - name: cleanup keytabs
   file:
     path: /etc/security/keytabs/
     state: absent
   become: true
-  tags: clean
+  tags: kill
 
 - name: destroy Kerberos database
   shell: kdb5_util destroy -f
   args:
     removes: /var/kerberos/krb5kdc/principal
   become: true
-  tags: clean
+  tags: kill
 
 - name: cleanup hdfs data and solr
   file:
@@ -105,7 +105,7 @@
   with_items:
     - /hadoop
     - /opt/ambari_infra_solr/data
-  tags: clean
+  tags: kill
 
 - name: cleanup other data
   file:
@@ -122,7 +122,7 @@
     - hive2
     - ranger
     - zookeeper
-  tags: clean
+  tags: kill
 
 - name: cleanup logs
   file:
@@ -142,7 +142,7 @@
     - ambari-infra-solr
     - zookeeper
     - hive-hcatalog
-  tags: clean
+  tags: kill
 
 
 - name: cleanup /tmp
@@ -150,7 +150,7 @@
   args:
     warn: false
   become: true
-  tags: clean
+  tags: kill
 
 - name: remove users and groups
   user:
@@ -170,7 +170,7 @@
     - zookeeper
     - ambari-qa
   when: false
-  tags: clean
+  tags: kill
 
 - debug:
     msg: IT IS RECOMMENDED TO REBOOT SERVER NOW

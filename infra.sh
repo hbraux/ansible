@@ -240,12 +240,13 @@ Options:
   -b : run Ansible playbook with tag 'before'
   -m : run Ansible playbook with tag 'main'
   -a : run Ansible playbook with tag 'after'
-  -c : run Ansible playbook with tag 'clean' (destroy)
+  -k : run Ansible playbook with tag 'destroy' (kill)
 
 commands:
  status            : servers status
  deploy  <pattern> : deploy server(s)
  destroy <pattern> : destroy server(s)
+ reboot <pattern>  : reboot server(s)
  on      <pattern> : start server(s)
  off     <pattern> : shutdown server(s)
 
@@ -475,7 +476,7 @@ function ansibleRun {
     esac
 
     ansibleCheck $Command
-    ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern*.$Domain" | grep $Domain |sort | uniq)
+    ServerList=$(ansible-playbook $Playbook --list-hosts --limit "$pattern.$Domain" | grep $Domain |sort | uniq)
     [[ -n $ServerList ]] || die "Cannot find any server matching $pattern"
 
     for server in $ServerList
@@ -498,6 +499,7 @@ function ansibleRun {
 	  else warn "$server is already running"
 	  fi;;
 	deploy)   runansible=1; [ $alive -ne 0 ] && up $server;;
+	reboot)   runansible=1;;
 	destroy) destroy $server;;
 	off)    if [ $alive -eq 0 ]
 	  then runansible=1
@@ -512,9 +514,9 @@ function ansibleRun {
       opt p && opts="$opts --tags pre"
       opt m && opts="$opts --tags main"
       opt t && opts="$opts --tags post"
-      opt c && opts="$opts --tags clean"
-      info "\$ ansible-playbook $Playbook $opts --limit $pattern*.$Domain"
-      ansible-playbook $opts $Playbook --limit "$pattern*.$Domain"
+      opt k && opts="$opts --tags kill"
+      info "\$ ansible-playbook $Playbook $opts --limit $pattern.$Domain"
+      ansible-playbook $opts $Playbook --limit "$pattern.$Domain"
     fi
     
   done
@@ -526,7 +528,7 @@ function ansibleRun {
 # ------------------------------------------
 
 # analyse command line
-init -fvpmtc $@
+init -fvpmtk $@
 
 case $Command in
   help)     usage;;
@@ -535,6 +537,7 @@ case $Command in
   off)      ansibleRun $Arguments;;
   deploy)   ansibleRun $Arguments;;
   destroy)  ansibleRun $Arguments;;
+  reboot)   ansibleRun $Arguments;;
   *)        die "Unknown command $Command "
 esac
 

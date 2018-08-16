@@ -3,7 +3,6 @@
     name: "{{ client.user }}"
     password: "{{ client.password }}"
     group:  "{{ client.group }}"
-    groups:  "{{ client.groups }}"
   become: true
   
 - name: add local public key

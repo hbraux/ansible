@@ -140,8 +140,7 @@
     port: "{{ item.value }}"
     state: stopped
     host: "{{ inventory_hostname }}"
-    timeout: 300
-  with_dict: "{{ hdp.cluster.ports }}"
+  with_dict: "{{ hdp.ports }}"
   when: not (startat > 5)
 
 - name: prepare API payload for KDC admin
@@ -256,6 +255,6 @@
     msg: "Checking {{ item.key }}"
     port: "{{ item.value }}"
     host: "{{ inventory_hostname }}"
-    timeout: 300
-  with_dict: "{{ hdp.cluster.ports }}"
+    timeout: 600
+  with_dict: "{{ hdp.ports }}"
   when: not (startat > 11)

@@ -1,0 +1,17 @@
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: shutdown CentOS server {{ inventory_hostname }} 
+      shell: /sbin/shutdown -r +1
+      ignore_errors: yes
+
+    - name: Wait for CentOS server {{ inventory_hostname }} to reboot
+      wait_for_connection:
+        delay: 90
+        timeout: 500
+        sleep: 5
+
+  become: true
+  
+
+

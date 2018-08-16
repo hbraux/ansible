@@ -83,16 +83,22 @@
     headers:
       X-Requested-By: "ambari"
 
-# fix for conection to server error; EOF occurred in violation of protocol 
+# fix for connection to server error; EOF occurred in violation of protocol 
 - name: fix ambari-agent.ini
   lineinfile:
     path: /etc/ambari-agent/conf/ambari-agent.ini
-    regexp: "^force_https_protocol="
-    insertafter: "[security]"
     line: "force_https_protocol=PROTOCOL_TLSv1_2"
-    backrefs: yes
+    insertafter: '^\[security\]'
   become: true
 
+# this change is not needed and is disabled
+- name: disable Certification check for Python
+  lineinfile:
+    path: /etc/python/cert-verification.cfg
+    regexp: "^verify="
+    line: "verify=disable"
+  become: true
+  when: false
 
 - name : start ambari agent
   service:

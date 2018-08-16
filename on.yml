@@ -1,14 +1,6 @@
 - hosts: all
   gather_facts: no
   tasks:
-    - name: Wait for CentOS server {{ inventory_hostname }} to start
+    - name: Wait for server {{ inventory_hostname }} to start
       wait_for_connection:
         timeout: 60
-      when: hostvars[inventory_hostname].os is not defined or hostvars[inventory_hostname].os|dirname == "centos"
-    - name: Wait for Alpine server {{ inventory_hostname }} to start
-      wait_for:
-        port: 22
-        host: "{{ inventory_hostname }}"
-      connection: local
-      when: hostvars[inventory_hostname].os is defined and hostvars[inventory_hostname].os|dirname == "alpine"
-

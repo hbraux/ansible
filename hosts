@@ -49,16 +49,14 @@ admin1.hostonly.com
 oracle1.hostonly.com cpu=2 mem=2048
 
 [docker]
-docker1.hostonly.com cpu=4 mem=4096 
+docker.hostonly.com cpu=4 mem=4096 
 
 [cassandra]
 cassandra1.hostonly.com
 
 [hdp]
+hdp.hostonly.com cpu=6 mem=8192 ansible_user=HB3460AN
 hdp1.hostonly.com cpu=6 mem=8192
-
-[hdpdock]
-hdp2.hostonly.com vm=no ansible_host=admin1.hostonly.com ansible_port=2022 ansible_ssh_user=ansible ansible_ssh_pass=ansible
 
 
 [tools]

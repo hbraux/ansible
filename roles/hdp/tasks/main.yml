@@ -22,7 +22,7 @@
     force_basic_auth: yes
     return_content: yes
   register: request_cluster
-  
+
 - name: DEPLOYING CLUSTER
   include_tasks: deploy_cluster.yml
   when: request_cluster.status == 404
@@ -47,9 +47,12 @@
     force_basic_auth: yes
   register: request_ranger
 
+- set_fact:
+    request_content: "{{ request_ranger.content | from_json }}"
+
 - name: ENABLING RANGER
   include_tasks: enable_ranger.yml
-  when: request_ranger.content|from_json['totalCount'] <= 3
+  when: hdp.cluster.kerberos is defined and request_content.totalCount is defined and request_content.totalCount == 0
 
 - name: create environment file for hdp
   template:
@@ -57,7 +60,7 @@
     dest: "{{ global.localhost.clientdir }}/env-HDP.sh"
   delegate_to: localhost
 
-# Ansible Workaround to prevent the destro task beeing executed
+# Ansible Workaround to prevent the kill task beeing executed
 - name: check tags
   shell: /bin/true
   register: no_tags
@@ -70,7 +73,7 @@
 - name: DESTROYING CLUSTER
   include_tasks: destroy_cluster.yml 
   when: no_tags is not defined and standard_tags is not defined
-  tags: clean
+  tags: kill
 
 
 

@@ -82,9 +82,9 @@
 
 - hosts: hdp
   vars:
-    preinstall: 'jdk*.rpm,ambari*.rpm'
+    install_rpm: 'jdk*.rpm,ambari*.rpm'
   roles:
-    - {role: 'preinstall', tags: 'pre'}
+    - {role: 'install-rpm', tags: 'pre'}
     - {role: 'network', tags: 'pre'}
     - {role: 'jdk', tags: 'pre'}
     - {role: 'kerberos', tags: 'pre'}
